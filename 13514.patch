@@ -1,0 +1,4298 @@
+From b184e77278763df6828c7abe6caf413e676c5c6a Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Wed, 29 Aug 2018 15:23:06 -0700
+Subject: [PATCH 01/12] Remove dep on GenericKey
+
+---
+ go/auth/token.go          |  6 +++---
+ go/ephemeral/device_ek.go |  4 ++--
+ go/ephemeral/team_ek.go   | 10 +++++-----
+ go/ephemeral/user_ek.go   | 10 +++++-----
+ go/libkb/naclwrap.go      | 19 +++++++++----------
+ 5 files changed, 24 insertions(+), 25 deletions(-)
+
+diff --git a/go/auth/token.go b/go/auth/token.go
+index 03d3e746e0a..da5607e15e2 100644
+--- a/go/auth/token.go
++++ b/go/auth/token.go
+@@ -97,16 +97,16 @@ func (t Token) String() string {
+ 
+ func VerifyToken(signature, server, challenge string, maxExpireIn int) (*Token, error) {
+ 	var t *Token
+-	key, token, _, err := libkb.NaclVerifyAndExtract(signature)
++	kid, token, _, err := libkb.NaclVerifyAndExtract(signature)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+ 	if t, err = parseToken(token); err != nil {
+ 		return nil, err
+ 	}
+-	if key.GetKID() != t.KID() {
++	if kid != t.KID() {
+ 		return nil, InvalidTokenKeyError{
+-			expected: key.GetKID().String(),
++			expected: kid.String(),
+ 			received: t.KID().String(),
+ 		}
+ 	}
+diff --git a/go/ephemeral/device_ek.go b/go/ephemeral/device_ek.go
+index 5ccc9ce6455..5c5d02496ad 100644
+--- a/go/ephemeral/device_ek.go
++++ b/go/ephemeral/device_ek.go
+@@ -204,7 +204,7 @@ func allDeviceEKMetadataMaybeStale(ctx context.Context, g *libkb.GlobalContext,
+ 	metadata = map[keybase1.DeviceID]keybase1.DeviceEkMetadata{}
+ 	for _, sig := range parsedResponse.Sigs {
+ 		// Verify the sig.
+-		signerKey, payload, _, err := libkb.NaclVerifyAndExtract(sig)
++		signerKID, payload, _, err := libkb.NaclVerifyAndExtract(sig)
+ 		if err != nil {
+ 			return nil, err
+ 		}
+@@ -213,7 +213,7 @@ func allDeviceEKMetadataMaybeStale(ctx context.Context, g *libkb.GlobalContext,
+ 		// authenticity.
+ 		matchingDevice, ok := kidToDevice[signerKey.GetKID()]
+ 		if !ok {
+-			return nil, fmt.Errorf("deviceEK returned for unknown device KID %s", signerKey.GetKID())
++			return nil, fmt.Errorf("deviceEK returned for unknown device KID %s", signerKID)
+ 		}
+ 
+ 		// Decode the signed JSON.
+diff --git a/go/ephemeral/team_ek.go b/go/ephemeral/team_ek.go
+index 82358e6f195..902672a3716 100644
+--- a/go/ephemeral/team_ek.go
++++ b/go/ephemeral/team_ek.go
+@@ -288,17 +288,17 @@ func fetchTeamEKStatement(ctx context.Context, g *libkb.GlobalContext, teamID ke
+ 	return statement, latestGeneration, false, nil
+ }
+ 
+-func extractTeamEKStatementFromSig(sig string) (signerKey libkb.GenericKey, statement *keybase1.TeamEkStatement, err error) {
+-	signerKey, payload, _, err := libkb.NaclVerifyAndExtract(sig)
++func extractTeamEKStatementFromSig(sig string) (signerKID keybase1.KID, statement *keybase1.TeamEkStatement, err error) {
++	signerKID, payload, _, err := libkb.NaclVerifyAndExtract(sig)
+ 	if err != nil {
+-		return signerKey, nil, err
++		return signerKID, nil, err
+ 	}
+ 
+ 	parsedStatement := keybase1.TeamEkStatement{}
+ 	if err = json.Unmarshal(payload, &parsedStatement); err != nil {
+-		return signerKey, nil, err
++		return signerKID, nil, err
+ 	}
+-	return signerKey, &parsedStatement, nil
++	return signerKID, &parsedStatement, nil
+ }
+ 
+ // Verify that the blob is validly signed, and that the signing key is the
+diff --git a/go/ephemeral/user_ek.go b/go/ephemeral/user_ek.go
+index aada972e41c..41507bbbf2e 100644
+--- a/go/ephemeral/user_ek.go
++++ b/go/ephemeral/user_ek.go
+@@ -292,17 +292,17 @@ func fetchUserEKStatement(ctx context.Context, g *libkb.GlobalContext, uid keyba
+ 	return statement, latestGeneration, false, nil
+ }
+ 
+-func extractUserEKStatementFromSig(sig string) (signerKey libkb.GenericKey, statement *keybase1.UserEkStatement, err error) {
+-	signerKey, payload, _, err := libkb.NaclVerifyAndExtract(sig)
++func extractUserEKStatementFromSig(sig string) (signerKID keybase1.KID, statement *keybase1.UserEkStatement, err error) {
++	signerKID, payload, _, err := libkb.NaclVerifyAndExtract(sig)
+ 	if err != nil {
+-		return signerKey, nil, err
++		return signerKID, nil, err
+ 	}
+ 
+ 	parsedStatement := keybase1.UserEkStatement{}
+ 	if err = json.Unmarshal(payload, &parsedStatement); err != nil {
+-		return signerKey, nil, err
++		return signerKID, nil, err
+ 	}
+-	return signerKey, &parsedStatement, nil
++	return signerKID, &parsedStatement, nil
+ }
+ 
+ // Verify that the blob is validly signed, and that the signing key is the
+diff --git a/go/libkb/naclwrap.go b/go/libkb/naclwrap.go
+index ea8a5972b94..730fe6c75fe 100644
+--- a/go/libkb/naclwrap.go
++++ b/go/libkb/naclwrap.go
+@@ -409,14 +409,13 @@ func (k NaclSigningKeyPair) SignToString(msg []byte) (sig string, id keybase1.Si
+ }
+ 
+ func (k NaclSigningKeyPair) VerifyStringAndExtract(ctx VerifyContext, sig string) (msg []byte, id keybase1.SigID, err error) {
+-	var keyInSignature GenericKey
++	var kidInSig keybase1.KID
+ 	var fullSigBody []byte
+-	keyInSignature, msg, fullSigBody, err = NaclVerifyAndExtract(sig)
++	kidInSig, msg, fullSigBody, err = NaclVerifyAndExtract(sig)
+ 	if err != nil {
+ 		return
+ 	}
+ 
+-	kidInSig := keyInSignature.GetKID()
+ 	kidWanted := k.GetKID()
+ 	if kidWanted.NotEqual(kidInSig) {
+ 		err = WrongKidError{kidInSig, kidWanted}
+@@ -429,28 +428,28 @@ func (k NaclSigningKeyPair) VerifyStringAndExtract(ctx VerifyContext, sig string
+ 
+ // NaclVerifyAndExtract interprets the given string as a NaCl-signed messaged, in
+ // the keybase NaclSigInfo (v1) format. It will check that the signature verified, and if so,
+-// will return the key that was used for the verification, the payload of the signature,
++// will return the KID of the key that was used for the verification, the payload of the signature,
+ // the full body of the decoded SignInfo, and an error
+-func NaclVerifyAndExtract(s string) (key GenericKey, payload []byte, fullBody []byte, err error) {
++func NaclVerifyAndExtract(s string) (kid keybase1.KID, payload []byte, fullBody []byte, err error) {
+ 	fullBody, err = base64.StdEncoding.DecodeString(s)
+ 	if err != nil {
+-		return nil, nil, nil, err
++		return "", nil, nil, err
+ 	}
+ 
+ 	naclSig, err := DecodeNaclSigInfoPacket(fullBody)
+ 	if err != nil {
+-		return nil, nil, nil, err
++		return "", nil, nil, err
+ 	}
+ 
+ 	var nk *NaclSigningKeyPublic
+ 	nk, err = naclSig.Verify()
+ 	if err != nil {
+-		return nil, nil, nil, err
++		return "", nil, nil, err
+ 	}
+ 
+-	key = NaclSigningKeyPair{Public: *nk}
++	key := NaclSigningKeyPair{Public: *nk}
+ 	payload = naclSig.Payload
+-	return key, payload, fullBody, nil
++	return key.GetKID(), payload, fullBody, nil
+ }
+ 
+ func (k NaclSigningKeyPair) VerifyString(ctx VerifyContext, sig string, msg []byte) (id keybase1.SigID, err error) {
+
+From 57fc66c56c925b7e5bfc9d0ed9b45269514bb149 Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Wed, 29 Aug 2018 15:25:00 -0700
+Subject: [PATCH 02/12] Fix
+
+---
+ go/ephemeral/device_ek.go | 2 +-
+ go/ephemeral/team_ek.go   | 8 ++++----
+ go/ephemeral/user_ek.go   | 8 ++++----
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/go/ephemeral/device_ek.go b/go/ephemeral/device_ek.go
+index 5c5d02496ad..a779a34f376 100644
+--- a/go/ephemeral/device_ek.go
++++ b/go/ephemeral/device_ek.go
+@@ -211,7 +211,7 @@ func allDeviceEKMetadataMaybeStale(ctx context.Context, g *libkb.GlobalContext,
+ 
+ 		// Find the device that matches the signing key. This checks
+ 		// authenticity.
+-		matchingDevice, ok := kidToDevice[signerKey.GetKID()]
++		matchingDevice, ok := kidToDevice[signerKID]
+ 		if !ok {
+ 			return nil, fmt.Errorf("deviceEK returned for unknown device KID %s", signerKID)
+ 		}
+diff --git a/go/ephemeral/team_ek.go b/go/ephemeral/team_ek.go
+index 902672a3716..2feec62a849 100644
+--- a/go/ephemeral/team_ek.go
++++ b/go/ephemeral/team_ek.go
+@@ -313,7 +313,7 @@ func verifySigWithLatestPTK(ctx context.Context, g *libkb.GlobalContext, teamID
+ 	// Parse the statement before we verify the signing key. Even if the
+ 	// signing key is bad (likely because of a legacy PTK roll that didn't
+ 	// include a teamEK statement), we'll still return the generation number.
+-	signerKey, parsedStatement, err := extractTeamEKStatementFromSig(sig)
++	signerKID, parsedStatement, err := extractTeamEKStatementFromSig(sig)
+ 	if err != nil {
+ 		return nil, latestGeneration, false, err
+ 	}
+@@ -333,7 +333,7 @@ func verifySigWithLatestPTK(ctx context.Context, g *libkb.GlobalContext, teamID
+ 	if err != nil {
+ 		return nil, latestGeneration, false, err
+ 	}
+-	if !teamSigningKey.GetKID().Equal(signerKey.GetKID()) {
++	if !teamSigningKey.GetKID().Equal(signerKID) {
+ 		// The latest PTK might be stale. Force a reload, then check this over again.
+ 		team, err := teams.Load(ctx, g, keybase1.LoadTeamArg{
+ 			ID:          teamID,
+@@ -346,9 +346,9 @@ func verifySigWithLatestPTK(ctx context.Context, g *libkb.GlobalContext, teamID
+ 		if err != nil {
+ 			return nil, latestGeneration, false, err
+ 		}
+-		if !teamSigningKey.GetKID().Equal(signerKey.GetKID()) {
++		if !teamSigningKey.GetKID().Equal(signerKID) {
+ 			return nil, latestGeneration, true, fmt.Errorf("teamEK returned for PTK signing KID %s, but latest is %s",
+-				signerKey.GetKID(), teamSigningKey.GetKID())
++				signerKID, teamSigningKey.GetKID())
+ 		}
+ 	}
+ 
+diff --git a/go/ephemeral/user_ek.go b/go/ephemeral/user_ek.go
+index 41507bbbf2e..cc7af2b0d30 100644
+--- a/go/ephemeral/user_ek.go
++++ b/go/ephemeral/user_ek.go
+@@ -318,7 +318,7 @@ func verifySigWithLatestPUK(ctx context.Context, g *libkb.GlobalContext, uid key
+ 	// Parse the statement before we verify the signing key. Even if the
+ 	// signing key is bad (likely because of a legacy PUK roll that didn't
+ 	// include a userEK statement), we'll still return the generation number.
+-	signerKey, parsedStatement, err := extractUserEKStatementFromSig(sig)
++	signerKID, parsedStatement, err := extractUserEKStatementFromSig(sig)
+ 	if err != nil {
+ 		return nil, latestGeneration, false, err
+ 	}
+@@ -333,14 +333,14 @@ func verifySigWithLatestPUK(ctx context.Context, g *libkb.GlobalContext, uid key
+ 		return nil, latestGeneration, false, err
+ 	}
+ 	latestPUK := upak.Current.GetLatestPerUserKey()
+-	if latestPUK == nil || !latestPUK.SigKID.Equal(signerKey.GetKID()) {
++	if latestPUK == nil || !latestPUK.SigKID.Equal(signerKID) {
+ 		// The latest PUK might be stale. Force a reload, then check this over again.
+ 		upak, _, err = g.GetUPAKLoader().LoadV2(libkb.NewLoadUserByUIDForceArg(g, uid))
+ 		if err != nil {
+ 			return nil, latestGeneration, false, err
+ 		}
+ 		latestPUK = upak.Current.GetLatestPerUserKey()
+-		if latestPUK == nil || !latestPUK.SigKID.Equal(signerKey.GetKID()) {
++		if latestPUK == nil || !latestPUK.SigKID.Equal(signerKID) {
+ 			// The latest PUK still doesn't match the signing key after a
+ 			// forced reload. Bail out, and set the `wrongKID` flag.
+ 			latestPUKSigningKIDString := "<nil>"
+@@ -348,7 +348,7 @@ func verifySigWithLatestPUK(ctx context.Context, g *libkb.GlobalContext, uid key
+ 				latestPUKSigningKIDString = fmt.Sprint(latestPUK.SigKID)
+ 			}
+ 			err = fmt.Errorf("userEK returned for PUK signing KID %s, but latest is %s",
+-				signerKey.GetKID(), latestPUKSigningKIDString)
++				signerKID, latestPUKSigningKIDString)
+ 			return nil, latestGeneration, true, err
+ 		}
+ 	}
+
+From 802c1f54d7f9b6d8afab996140dc64667b1e7744 Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Wed, 29 Aug 2018 15:46:58 -0700
+Subject: [PATCH 03/12] Remove dep on keypair
+
+---
+ go/libkb/naclwrap.go | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/go/libkb/naclwrap.go b/go/libkb/naclwrap.go
+index 730fe6c75fe..2d49068a768 100644
+--- a/go/libkb/naclwrap.go
++++ b/go/libkb/naclwrap.go
+@@ -447,9 +447,8 @@ func NaclVerifyAndExtract(s string) (kid keybase1.KID, payload []byte, fullBody
+ 		return "", nil, nil, err
+ 	}
+ 
+-	key := NaclSigningKeyPair{Public: *nk}
+ 	payload = naclSig.Payload
+-	return key.GetKID(), payload, fullBody, nil
++	return nk.GetKID(), payload, fullBody, nil
+ }
+ 
+ func (k NaclSigningKeyPair) VerifyString(ctx VerifyContext, sig string, msg []byte) (id keybase1.SigID, err error) {
+
+From 0b89c7cfe1dff81b97a691dd7240ac23c4538f3e Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Wed, 29 Aug 2018 14:46:13 -0700
+Subject: [PATCH 04/12] Move AlgoType out
+
+---
+ go/engine/device_history.go   |  3 +-
+ go/engine/saltpack_decrypt.go |  3 +-
+ go/kbcrypto/algotype.go       | 20 ++++++++++++
+ go/libkb/constants.go         | 16 ----------
+ go/libkb/errors.go            |  3 +-
+ go/libkb/generickey.go        |  5 ++-
+ go/libkb/gpg_key.go           |  5 +--
+ go/libkb/kid.go               |  5 +--
+ go/libkb/naclwrap.go          | 57 ++++++++++++++++++-----------------
+ go/libkb/pgp_key.go           |  9 +++---
+ go/libkb/saltpack.go          |  3 +-
+ go/libkb/saltpack_sign.go     |  3 +-
+ go/libkb/skb.go               | 15 ++++-----
+ go/libkb/upak.go              |  3 +-
+ go/teams/box.go               |  3 +-
+ 15 files changed, 84 insertions(+), 69 deletions(-)
+ create mode 100644 go/kbcrypto/algotype.go
+
+diff --git a/go/engine/device_history.go b/go/engine/device_history.go
+index f9806abb932..cc8bae139ee 100644
+--- a/go/engine/device_history.go
++++ b/go/engine/device_history.go
+@@ -8,6 +8,7 @@ import (
+ 	"fmt"
+ 	"time"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -160,7 +161,7 @@ func (e *DeviceHistory) loadDevices(m libkb.MetaContext, user *libkb.User) error
+ 
+ func (e *DeviceHistory) provisioner(m libkb.MetaContext, d *libkb.Device, ckis *libkb.ComputedKeyInfos, info *libkb.ComputedKeyInfo) (*libkb.Device, error) {
+ 	for _, v := range info.Delegations {
+-		if libkb.AlgoType(v.GetKeyType()) != libkb.KIDNaclEddsa {
++		if kbcrypto.AlgoType(v.GetKeyType()) != kbcrypto.KIDNaclEddsa {
+ 			// only concerned with device history, not pgp provisioners
+ 			continue
+ 		}
+diff --git a/go/engine/saltpack_decrypt.go b/go/engine/saltpack_decrypt.go
+index 3052cb6bbd6..8ddc42cf964 100644
+--- a/go/engine/saltpack_decrypt.go
++++ b/go/engine/saltpack_decrypt.go
+@@ -7,6 +7,7 @@ import (
+ 	"bytes"
+ 	"io"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/saltpack"
+@@ -104,7 +105,7 @@ func (e *SaltpackDecrypt) makeMessageInfo(me *libkb.User, mki *saltpack.MessageK
+ 	}
+ 	ckf := me.GetComputedKeyFamily()
+ 	for _, nr := range mki.NamedReceivers {
+-		kid := keybase1.KIDFromRawKey(nr, byte(libkb.KIDNaclDH))
++		kid := keybase1.KIDFromRawKey(nr, byte(kbcrypto.KIDNaclDH))
+ 		if dev, _ := ckf.GetDeviceForKID(kid); dev != nil {
+ 			edev := dev.ProtExport()
+ 			edev.EncryptKey = kid
+diff --git a/go/kbcrypto/algotype.go b/go/kbcrypto/algotype.go
+new file mode 100644
+index 00000000000..806acaba375
+--- /dev/null
++++ b/go/kbcrypto/algotype.go
+@@ -0,0 +1,20 @@
++// Copyright 2018 Keybase, Inc. All rights reserved. Use of
++// this source code is governed by the included BSD license.
++
++package kbcrypto
++
++type AlgoType int
++
++const (
++	KIDPGPBase    AlgoType = 0x00
++	KIDPGPRsa     AlgoType = 0x1
++	KIDPGPElgamal AlgoType = 0x10
++	KIDPGPDsa     AlgoType = 0x11
++	KIDPGPEcdh    AlgoType = 0x12
++	KIDPGPEcdsa   AlgoType = 0x13
++	KIDPGPEddsa   AlgoType = 0x16
++	KIDNaclEddsa  AlgoType = 0x20
++	KIDNaclDH     AlgoType = 0x21
++
++	SigKbEddsa AlgoType = KIDNaclEddsa
++)
+diff --git a/go/libkb/constants.go b/go/libkb/constants.go
+index 678314b402d..14538f43da7 100644
+--- a/go/libkb/constants.go
++++ b/go/libkb/constants.go
+@@ -473,18 +473,6 @@ func (t PacketTag) String() string {
+ 	}
+ }
+ 
+-const (
+-	KIDPGPBase    AlgoType = 0x00
+-	KIDPGPRsa     AlgoType = 0x1
+-	KIDPGPElgamal AlgoType = 0x10
+-	KIDPGPDsa     AlgoType = 0x11
+-	KIDPGPEcdh    AlgoType = 0x12
+-	KIDPGPEcdsa   AlgoType = 0x13
+-	KIDPGPEddsa   AlgoType = 0x16
+-	KIDNaclEddsa  AlgoType = 0x20
+-	KIDNaclDH     AlgoType = 0x21
+-)
+-
+ // OpenPGP hash IDs, taken from http://tools.ietf.org/html/rfc4880#section-9.4
+ const (
+ 	HashPGPMd5       = 1
+@@ -496,10 +484,6 @@ const (
+ 	HashPGPSha224    = 11
+ )
+ 
+-const (
+-	SigKbEddsa = KIDNaclEddsa
+-)
+-
+ const (
+ 	ServerUpdateLag = time.Minute
+ )
+diff --git a/go/libkb/errors.go b/go/libkb/errors.go
+index efc5d3f1991..b78b3fd25c7 100644
+--- a/go/libkb/errors.go
++++ b/go/libkb/errors.go
+@@ -14,6 +14,7 @@ import (
+ 	"time"
+ 
+ 	"github.com/keybase/client/go/gregor"
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/protocol/chat1"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -1068,7 +1069,7 @@ func (r KeyExpiredError) Error() string {
+ //=============================================================================
+ 
+ type UnknownKeyTypeError struct {
+-	typ AlgoType
++	typ kbcrypto.AlgoType
+ }
+ 
+ func (e UnknownKeyTypeError) Error() string {
+diff --git a/go/libkb/generickey.go b/go/libkb/generickey.go
+index 9eacfe48192..b9588cf092b 100644
+--- a/go/libkb/generickey.go
++++ b/go/libkb/generickey.go
+@@ -6,11 +6,10 @@ package libkb
+ import (
+ 	"strings"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ )
+ 
+-type AlgoType int
+-
+ type VerifyContext interface {
+ 	Debug(format string, args ...interface{})
+ }
+@@ -21,7 +20,7 @@ type RawPrivateKey []byte
+ type GenericKey interface {
+ 	GetKID() keybase1.KID
+ 	GetBinaryKID() keybase1.BinaryKID
+-	GetAlgoType() AlgoType
++	GetAlgoType() kbcrypto.AlgoType
+ 
+ 	// Sign to an ASCII signature (which includes the message
+ 	// itself) and return it, along with a derived ID.
+diff --git a/go/libkb/gpg_key.go b/go/libkb/gpg_key.go
+index d25b12810b0..8de55e0206e 100644
+--- a/go/libkb/gpg_key.go
++++ b/go/libkb/gpg_key.go
+@@ -7,6 +7,7 @@ import (
+ 	"crypto/sha256"
+ 	"errors"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"golang.org/x/net/context"
+ )
+@@ -40,8 +41,8 @@ func (g *GPGKey) GetFingerprintP() *PGPFingerprint {
+ 	return g.fp
+ }
+ 
+-func (g *GPGKey) GetAlgoType() AlgoType {
+-	return KIDPGPBase
++func (g *GPGKey) GetAlgoType() kbcrypto.AlgoType {
++	return kbcrypto.KIDPGPBase
+ }
+ 
+ func (g *GPGKey) SignToString(msg []byte) (sig string, id keybase1.SigID, err error) {
+diff --git a/go/libkb/kid.go b/go/libkb/kid.go
+index 6475e68c571..bd62e78ef25 100644
+--- a/go/libkb/kid.go
++++ b/go/libkb/kid.go
+@@ -4,6 +4,7 @@
+ package libkb
+ 
+ import (
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	jsonw "github.com/keybase/go-jsonw"
+ )
+@@ -19,11 +20,11 @@ func GetKID(w *jsonw.Wrapper) (kid keybase1.KID, err error) {
+ }
+ 
+ func KIDIsDeviceVerify(kid keybase1.KID) bool {
+-	return AlgoType(kid.GetKeyType()) == KIDNaclEddsa
++	return kbcrypto.AlgoType(kid.GetKeyType()) == kbcrypto.KIDNaclEddsa
+ }
+ 
+ func KIDIsDeviceEncrypt(kid keybase1.KID) bool {
+-	return AlgoType(kid.GetKeyType()) == KIDNaclDH
++	return kbcrypto.AlgoType(kid.GetKeyType()) == kbcrypto.KIDNaclDH
+ }
+ 
+ func KIDIsPGP(kid keybase1.KID) bool {
+diff --git a/go/libkb/naclwrap.go b/go/libkb/naclwrap.go
+index 2d49068a768..a362522fa0f 100644
+--- a/go/libkb/naclwrap.go
++++ b/go/libkb/naclwrap.go
+@@ -12,6 +12,7 @@ import (
+ 	"fmt"
+ 	"io"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/go-crypto/ed25519"
+ 	"golang.org/x/crypto/nacl/box"
+@@ -23,7 +24,7 @@ type NaclSigInfo struct {
+ 	Kid      keybase1.BinaryKID `codec:"key"`
+ 	Payload  []byte             `codec:"payload,omitempty"`
+ 	Sig      NaclSignature      `codec:"sig"`
+-	SigType  AlgoType           `codec:"sig_type"`
++	SigType  kbcrypto.AlgoType  `codec:"sig_type"`
+ 	HashType int                `codec:"hash_type"`
+ 	Detached bool               `codec:"detached"`
+ 	Version  int                `codec:"version,omitempty"`
+@@ -31,11 +32,11 @@ type NaclSigInfo struct {
+ }
+ 
+ type NaclEncryptionInfo struct {
+-	Ciphertext     []byte   `codec:"ciphertext"`
+-	EncryptionType AlgoType `codec:"enc_type"`
+-	Nonce          []byte   `codec:"nonce"`
+-	Receiver       []byte   `codec:"receiver_key"`
+-	Sender         []byte   `codec:"sender_key"`
++	Ciphertext     []byte            `codec:"ciphertext"`
++	EncryptionType kbcrypto.AlgoType `codec:"enc_type"`
++	Nonce          []byte            `codec:"nonce"`
++	Receiver       []byte            `codec:"receiver_key"`
++	Sender         []byte            `codec:"sender_key"`
+ }
+ 
+ const NaclDHKeysize = 32
+@@ -119,7 +120,7 @@ func importNaclKid(bkid []byte, typ byte, bodyLen int) (ret []byte, err error) {
+ 
+ func ImportNaclSigningKeyPairFromBytes(pub []byte, priv []byte) (ret NaclSigningKeyPair, err error) {
+ 	var body []byte
+-	if body, err = importNaclKid(pub, byte(KIDNaclEddsa), ed25519.PublicKeySize); err != nil {
++	if body, err = importNaclKid(pub, byte(kbcrypto.KIDNaclEddsa), ed25519.PublicKeySize); err != nil {
+ 		return
+ 	}
+ 	copy(ret.Public[:], body)
+@@ -146,7 +147,7 @@ func ImportKeypairFromKID(k keybase1.KID) (key GenericKey, err error) {
+ 	}
+ 	raw := kid[2:(l - 1)]
+ 	switch kid[1] {
+-	case byte(KIDNaclEddsa):
++	case byte(kbcrypto.KIDNaclEddsa):
+ 		if len(raw) != ed25519.PublicKeySize {
+ 			err = BadKeyError{"Bad EdDSA key size"}
+ 		} else {
+@@ -154,7 +155,7 @@ func ImportKeypairFromKID(k keybase1.KID) (key GenericKey, err error) {
+ 			copy(tmp.Public[:], raw)
+ 			key = tmp
+ 		}
+-	case byte(KIDNaclDH):
++	case byte(kbcrypto.KIDNaclDH):
+ 		if len(raw) != NaclDHKeysize {
+ 			err = BadKeyError{"Bad DH key size"}
+ 		} else {
+@@ -182,7 +183,7 @@ func ImportDHKeypairFromKID(k keybase1.KID) (*NaclDHKeyPair, error) {
+ 
+ func ImportNaclSigningKeyPairFromHex(s string) (ret NaclSigningKeyPair, err error) {
+ 	var body []byte
+-	if body, err = importNaclHex(s, byte(KIDNaclEddsa), ed25519.PublicKeySize); err != nil {
++	if body, err = importNaclHex(s, byte(kbcrypto.KIDNaclEddsa), ed25519.PublicKeySize); err != nil {
+ 		return
+ 	}
+ 	copy(ret.Public[:], body)
+@@ -191,7 +192,7 @@ func ImportNaclSigningKeyPairFromHex(s string) (ret NaclSigningKeyPair, err erro
+ 
+ func ImportNaclDHKeyPairFromBytes(pub []byte, priv []byte) (ret NaclDHKeyPair, err error) {
+ 	var body []byte
+-	if body, err = importNaclKid(pub, byte(KIDNaclDH), NaclDHKeysize); err != nil {
++	if body, err = importNaclKid(pub, byte(kbcrypto.KIDNaclDH), NaclDHKeysize); err != nil {
+ 		return
+ 	}
+ 	copy(ret.Public[:], body)
+@@ -207,7 +208,7 @@ func ImportNaclDHKeyPairFromBytes(pub []byte, priv []byte) (ret NaclDHKeyPair, e
+ 
+ func ImportNaclDHKeyPairFromHex(s string) (ret NaclDHKeyPair, err error) {
+ 	var body []byte
+-	if body, err = importNaclHex(s, byte(KIDNaclDH), NaclDHKeysize); err != nil {
++	if body, err = importNaclHex(s, byte(kbcrypto.KIDNaclDH), NaclDHKeysize); err != nil {
+ 		return
+ 	}
+ 	copy(ret.Public[:], body)
+@@ -221,7 +222,7 @@ func (k NaclDHKeyPublic) GetKID() keybase1.KID {
+ func (k NaclDHKeyPublic) GetBinaryKID() keybase1.BinaryKID {
+ 	prefix := []byte{
+ 		byte(KeybaseKIDV1),
+-		byte(KIDNaclDH),
++		byte(kbcrypto.KIDNaclDH),
+ 	}
+ 	suffix := byte(IDSuffixKID)
+ 	out := append(prefix, k[:]...)
+@@ -233,18 +234,18 @@ func (k NaclDHKeyPair) GetFingerprintP() *PGPFingerprint {
+ 	return nil
+ }
+ 
+-func (k NaclDHKeyPair) GetAlgoType() AlgoType {
+-	return KIDNaclDH
++func (k NaclDHKeyPair) GetAlgoType() kbcrypto.AlgoType {
++	return kbcrypto.KIDNaclDH
+ }
+ 
+-func (k NaclSigningKeyPair) GetAlgoType() AlgoType {
+-	return KIDNaclEddsa
++func (k NaclSigningKeyPair) GetAlgoType() kbcrypto.AlgoType {
++	return kbcrypto.KIDNaclEddsa
+ }
+ 
+ func (k NaclSigningKeyPublic) GetBinaryKID() keybase1.BinaryKID {
+ 	prefix := []byte{
+ 		byte(KeybaseKIDV1),
+-		byte(KIDNaclEddsa),
++		byte(kbcrypto.KIDNaclEddsa),
+ 	}
+ 	suffix := byte(IDSuffixKID)
+ 	out := append(prefix, k[:]...)
+@@ -335,7 +336,7 @@ func (k NaclSigningKeyPair) Sign(msg []byte) (ret *NaclSigInfo, err error) {
+ 		Kid:      k.GetBinaryKID(),
+ 		Payload:  msg,
+ 		Sig:      *k.Private.Sign(msg),
+-		SigType:  SigKbEddsa,
++		SigType:  kbcrypto.SigKbEddsa,
+ 		HashType: HashPGPSha512,
+ 		Detached: true,
+ 		Version:  0,
+@@ -383,7 +384,7 @@ func (k NaclSigningKeyPair) SignV2(msg []byte, prefix SignaturePrefix) (ret *Nac
+ 		Kid:      k.GetBinaryKID(),
+ 		Payload:  msg,
+ 		Sig:      *k.Private.Sign(prefix.Prefix(msg)),
+-		SigType:  SigKbEddsa,
++		SigType:  kbcrypto.SigKbEddsa,
+ 		HashType: HashPGPSha512,
+ 		Detached: true,
+ 		Version:  2,
+@@ -487,7 +488,7 @@ func KIDToNaclSigningKeyPublic(bk []byte) *NaclSigningKeyPublic {
+ 	if len(bk) != 3+ed25519.PublicKeySize {
+ 		return nil
+ 	}
+-	if bk[0] != byte(KeybaseKIDV1) || bk[1] != byte(KIDNaclEddsa) || bk[len(bk)-1] != byte(IDSuffixKID) {
++	if bk[0] != byte(KeybaseKIDV1) || bk[1] != byte(kbcrypto.KIDNaclEddsa) || bk[len(bk)-1] != byte(IDSuffixKID) {
+ 		return nil
+ 	}
+ 	var ret NaclSigningKeyPublic
+@@ -497,10 +498,10 @@ func KIDToNaclSigningKeyPublic(bk []byte) *NaclSigningKeyPublic {
+ 
+ func EncryptionKIDToPublicKeyBytes(bk []byte) ([]byte, error) {
+ 	if len(bk) != 3+NaclDHKeysize {
+-		return []byte{}, fmt.Errorf("invalid DH encryption key KID (wrong length)")
++		return []byte{}, fmt.Errorf("invalid DH encryption key kbcrypto.KID (wrong length)")
+ 	}
+-	if bk[0] != byte(KeybaseKIDV1) || bk[1] != byte(KIDNaclDH) || bk[len(bk)-1] != byte(IDSuffixKID) {
+-		return []byte{}, fmt.Errorf("invalid DH encryption key KID (wrong type)")
++	if bk[0] != byte(KeybaseKIDV1) || bk[1] != byte(kbcrypto.KIDNaclDH) || bk[len(bk)-1] != byte(IDSuffixKID) {
++		return []byte{}, fmt.Errorf("invalid DH encryption key kbcrypto.KID (wrong type)")
+ 	}
+ 	return bk[2 : len(bk)-1], nil
+ }
+@@ -722,7 +723,7 @@ func (k NaclDHKeyPair) Encrypt(msg []byte, sender *NaclDHKeyPair) (*NaclEncrypti
+ 	ctext = box.Seal(ctext, msg, &nonce, ((*[32]byte)(&k.Public)), ((*[32]byte)(sender.Private)))
+ 	ret := &NaclEncryptionInfo{
+ 		Ciphertext:     ctext,
+-		EncryptionType: KIDNaclDH,
++		EncryptionType: kbcrypto.KIDNaclDH,
+ 		Nonce:          nonce[:],
+ 		Receiver:       k.GetKID().ToBytes(),
+ 		Sender:         sender.GetKID().ToBytes(),
+@@ -835,7 +836,7 @@ func (k *NaclEncryptionInfo) GetTagAndVersion() (PacketTag, PacketVersion) {
+ }
+ 
+ // DecryptFromString decrypts the output of EncryptToString above,
+-// and returns the KID of the other end.
++// and returns the kbcrypto.KID of the other end.
+ func (k NaclDHKeyPair) DecryptFromString(ciphertext string) (msg []byte, sender keybase1.KID, err error) {
+ 	var nei NaclEncryptionInfo
+ 
+@@ -847,13 +848,13 @@ func (k NaclDHKeyPair) DecryptFromString(ciphertext string) (msg []byte, sender
+ }
+ 
+ // Decrypt a NaclEncryptionInfo packet, and on success return the plaintext
+-// and the KID of the sender (which might be an ephemeral key).
++// and the kbcrypto.KID of the sender (which might be an ephemeral key).
+ func (k NaclDHKeyPair) Decrypt(nei *NaclEncryptionInfo) (plaintext []byte, sender keybase1.KID, err error) {
+ 	if k.Private == nil {
+ 		err = NoSecretKeyError{}
+ 		return
+ 	}
+-	if nei.EncryptionType != KIDNaclDH {
++	if nei.EncryptionType != kbcrypto.KIDNaclDH {
+ 		err = DecryptBadPacketTypeError{}
+ 		return
+ 	}
+diff --git a/go/libkb/pgp_key.go b/go/libkb/pgp_key.go
+index 5f483a84885..935391d22be 100644
+--- a/go/libkb/pgp_key.go
++++ b/go/libkb/pgp_key.go
+@@ -14,6 +14,7 @@ import (
+ 	"regexp"
+ 	"strings"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/go-crypto/openpgp"
+ 	"github.com/keybase/go-crypto/openpgp/armor"
+@@ -629,8 +630,8 @@ func (k *PGPKeyBundle) GetKID() keybase1.KID {
+ 	return k.GetBinaryKID().ToKID()
+ }
+ 
+-func (k PGPKeyBundle) GetAlgoType() AlgoType {
+-	return AlgoType(k.PrimaryKey.PubKeyAlgo)
++func (k PGPKeyBundle) GetAlgoType() kbcrypto.AlgoType {
++	return kbcrypto.AlgoType(k.PrimaryKey.PubKeyAlgo)
+ }
+ 
+ func (k PGPKeyBundle) KeyDescription() string {
+@@ -771,9 +772,9 @@ func (k PGPKeyBundle) VerifyString(ctx VerifyContext, sig string, msg []byte) (i
+ 	return
+ }
+ 
+-func IsPGPAlgo(algo AlgoType) bool {
++func IsPGPAlgo(algo kbcrypto.AlgoType) bool {
+ 	switch algo {
+-	case KIDPGPRsa, KIDPGPElgamal, KIDPGPDsa, KIDPGPEcdh, KIDPGPEcdsa, KIDPGPBase, KIDPGPEddsa:
++	case kbcrypto.KIDPGPRsa, kbcrypto.KIDPGPElgamal, kbcrypto.KIDPGPDsa, kbcrypto.KIDPGPEcdh, kbcrypto.KIDPGPEcdsa, kbcrypto.KIDPGPBase, kbcrypto.KIDPGPEddsa:
+ 		return true
+ 	}
+ 	return false
+diff --git a/go/libkb/saltpack.go b/go/libkb/saltpack.go
+index 9413c4df354..c5625226176 100644
+--- a/go/libkb/saltpack.go
++++ b/go/libkb/saltpack.go
+@@ -7,6 +7,7 @@ import (
+ 	"bytes"
+ 	"fmt"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/saltpack"
+ 	"golang.org/x/crypto/ed25519"
+@@ -207,7 +208,7 @@ func BoxPublicKeyToKeybaseKID(k saltpack.BoxPublicKey) (ret keybase1.KID) {
+ 		return ret
+ 	}
+ 	p := k.ToKID()
+-	return keybase1.KIDFromRawKey(p, byte(KIDNaclDH))
++	return keybase1.KIDFromRawKey(p, byte(kbcrypto.KIDNaclDH))
+ }
+ 
+ func checkSaltpackBrand(b string) error {
+diff --git a/go/libkb/saltpack_sign.go b/go/libkb/saltpack_sign.go
+index 2b1e1152293..8ae457c036e 100644
+--- a/go/libkb/saltpack_sign.go
++++ b/go/libkb/saltpack_sign.go
+@@ -9,6 +9,7 @@ import (
+ 
+ 	"github.com/keybase/go-crypto/ed25519"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/saltpack"
+ )
+@@ -105,5 +106,5 @@ func SigningPublicKeyToKeybaseKID(k saltpack.SigningPublicKey) (ret keybase1.KID
+ 		return ret
+ 	}
+ 	p := k.ToKID()
+-	return keybase1.KIDFromRawKey(p, byte(KIDNaclEddsa))
++	return keybase1.KIDFromRawKey(p, byte(kbcrypto.KIDNaclEddsa))
+ }
+diff --git a/go/libkb/skb.go b/go/libkb/skb.go
+index 26227ec958b..671226f0cbc 100644
+--- a/go/libkb/skb.go
++++ b/go/libkb/skb.go
+@@ -20,6 +20,7 @@ import (
+ 	"os"
+ 	"sync"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	triplesec "github.com/keybase/go-triplesec"
+ )
+@@ -39,9 +40,9 @@ func DebugDumpKey(g *GlobalContext, name string, b []byte) {
+ }
+ 
+ type SKB struct {
+-	Priv SKBPriv  `codec:"priv"`
+-	Pub  []byte   `codec:"pub"`
+-	Type AlgoType `codec:"type,omitempty"`
++	Priv SKBPriv           `codec:"priv"`
++	Pub  []byte            `codec:"pub"`
++	Type kbcrypto.AlgoType `codec:"type,omitempty"`
+ 
+ 	decodedPub      GenericKey
+ 	decryptedSecret GenericKey
+@@ -141,9 +142,9 @@ func (s *SKB) ReadKey() (g GenericKey, err error) {
+ 		var w *Warnings
+ 		g, w, err = ReadOneKeyFromBytes(s.Pub)
+ 		w.Warn(s.G())
+-	case s.Type == KIDNaclEddsa:
++	case s.Type == kbcrypto.KIDNaclEddsa:
+ 		g, err = ImportNaclSigningKeyPairFromBytes(s.Pub, nil)
+-	case s.Type == KIDNaclDH:
++	case s.Type == kbcrypto.KIDNaclDH:
+ 		g, err = ImportNaclDHKeyPairFromBytes(s.Pub, nil)
+ 	default:
+ 		err = UnknownKeyTypeError{s.Type}
+@@ -289,9 +290,9 @@ func (s *SKB) parseUnlocked(unlocked []byte) (key GenericKey, err error) {
+ 		var w *Warnings
+ 		key, w, err = ReadOneKeyFromBytes(unlocked)
+ 		w.Warn(s.G())
+-	case s.Type == KIDNaclEddsa:
++	case s.Type == kbcrypto.KIDNaclEddsa:
+ 		key, err = ImportNaclSigningKeyPairFromBytes(s.Pub, unlocked)
+-	case s.Type == KIDNaclDH:
++	case s.Type == kbcrypto.KIDNaclDH:
+ 		key, err = ImportNaclDHKeyPairFromBytes(s.Pub, unlocked)
+ 	}
+ 
+diff --git a/go/libkb/upak.go b/go/libkb/upak.go
+index 95a28aa6d77..94dc3389f32 100644
+--- a/go/libkb/upak.go
++++ b/go/libkb/upak.go
+@@ -5,6 +5,7 @@ package libkb
+ import (
+ 	"fmt"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ )
+ 
+@@ -62,7 +63,7 @@ func checkKIDKeybase(u *keybase1.UserPlusKeysV2AllIncarnations, kid keybase1.KID
+ }
+ 
+ func CheckKID(u *keybase1.UserPlusKeysV2AllIncarnations, kid keybase1.KID) (found bool, revokedAt *keybase1.KeybaseTime, deleted bool) {
+-	if IsPGPAlgo(AlgoType(kid.GetKeyType())) {
++	if IsPGPAlgo(kbcrypto.AlgoType(kid.GetKeyType())) {
+ 		found = checkKIDPGP(u, kid)
+ 		return found, nil, false
+ 	}
+diff --git a/go/teams/box.go b/go/teams/box.go
+index f97f23c9464..4ff0ba16289 100644
+--- a/go/teams/box.go
++++ b/go/teams/box.go
+@@ -3,6 +3,7 @@ package teams
+ import (
+ 	"encoding/base64"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -30,7 +31,7 @@ func (t *TeamBox) Open(encKey *libkb.NaclDHKeyPair) (keybase1.PerTeamKeySeed, er
+ 	}
+ 	nei := &libkb.NaclEncryptionInfo{
+ 		Ciphertext:     ctext,
+-		EncryptionType: libkb.KIDNaclDH,
++		EncryptionType: kbcrypto.KIDNaclDH,
+ 		Nonce:          nonce,
+ 		Receiver:       encKey.GetKID().ToBytes(),
+ 		Sender:         t.SenderKID.ToBytes(),
+
+From 268b6397faf02d3b74fbcc3ac720a63b974287c4 Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Wed, 29 Aug 2018 15:57:02 -0700
+Subject: [PATCH 05/12] Move SIgnaturePrefix out
+
+---
+ go/chat/attachments/crypt.go        | 11 +++++-----
+ go/chat/attachments/store.go        |  3 ++-
+ go/chat/boxer.go                    | 21 +++++++++----------
+ go/chat/signencrypt/codec.go        | 24 +++++++++++-----------
+ go/chat/signencrypt/codec_test.go   |  8 ++++----
+ go/chat/signencrypt/example/main.go | 10 +++++-----
+ go/chat/signencrypt/seeker.go       |  6 +++---
+ go/engine/crypto.go                 |  3 ++-
+ go/kbcrypto/signature_prefix.go     | 28 ++++++++++++++++++++++++++
+ go/libkb/constants.go               | 11 ----------
+ go/libkb/naclwrap.go                | 31 ++++++++++-------------------
+ go/libkb/naclwrap_test.go           |  9 +++++----
+ go/libkb/nist.go                    |  8 +++++---
+ 13 files changed, 93 insertions(+), 80 deletions(-)
+ create mode 100644 go/kbcrypto/signature_prefix.go
+
+diff --git a/go/chat/attachments/crypt.go b/go/chat/attachments/crypt.go
+index 11c3cae3237..4542e358f4e 100644
+--- a/go/chat/attachments/crypt.go
++++ b/go/chat/attachments/crypt.go
+@@ -6,6 +6,7 @@ import (
+ 	"io"
+ 
+ 	"github.com/keybase/client/go/chat/signencrypt"
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/go-crypto/ed25519"
+ )
+@@ -75,14 +76,14 @@ func (s *SignEncrypter) Encrypt(r io.Reader) (io.Reader, error) {
+ 	if err := s.makeKeys(); err != nil {
+ 		return nil, err
+ 	}
+-	return signencrypt.NewEncodingReader(s.encKey, s.signKey, libkb.SignaturePrefixChatAttachment, nonceConst, r), nil
++	return signencrypt.NewEncodingReader(s.encKey, s.signKey, kbcrypto.SignaturePrefixChatAttachment, nonceConst, r), nil
+ }
+ 
+ func (s *SignEncrypter) EncryptWithNonce(r io.Reader, nonce signencrypt.Nonce) (io.Reader, error) {
+ 	if err := s.makeKeys(); err != nil {
+ 		return nil, err
+ 	}
+-	return signencrypt.NewEncodingReader(s.encKey, s.signKey, libkb.SignaturePrefixChatAttachment, nonce, r), nil
++	return signencrypt.NewEncodingReader(s.encKey, s.signKey, kbcrypto.SignaturePrefixChatAttachment, nonce, r), nil
+ }
+ 
+ // EncryptResume is used to create a SignEncrypter to resume an interrupted attachment upload.
+@@ -92,7 +93,7 @@ func (s *SignEncrypter) EncryptResume(r io.Reader, nonce signencrypt.Nonce, encK
+ 	s.encKey = encKey
+ 	s.signKey = signKey
+ 	s.verifyKey = verifyKey
+-	return signencrypt.NewEncodingReader(s.encKey, s.signKey, libkb.SignaturePrefixChatAttachment, nonce, r), nil
++	return signencrypt.NewEncodingReader(s.encKey, s.signKey, kbcrypto.SignaturePrefixChatAttachment, nonce, r), nil
+ }
+ 
+ func (s *SignEncrypter) EncryptKey() []byte {
+@@ -145,7 +146,7 @@ func (s *SignDecrypter) Decrypt(r io.Reader, encKey, verifyKey []byte) io.Reader
+ 	copy(xencKey[:], encKey)
+ 	var xverifyKey [ed25519.PublicKeySize]byte
+ 	copy(xverifyKey[:], verifyKey)
+-	return signencrypt.NewDecodingReader(&xencKey, &xverifyKey, libkb.SignaturePrefixChatAttachment, nonceConst, r)
++	return signencrypt.NewDecodingReader(&xencKey, &xverifyKey, kbcrypto.SignaturePrefixChatAttachment, nonceConst, r)
+ }
+ 
+ func (s *SignDecrypter) DecryptWithNonce(r io.Reader, nonce signencrypt.Nonce, encKey, verifyKey []byte) (plaintext io.Reader) {
+@@ -153,5 +154,5 @@ func (s *SignDecrypter) DecryptWithNonce(r io.Reader, nonce signencrypt.Nonce, e
+ 	copy(xencKey[:], encKey)
+ 	var xverifyKey [ed25519.PublicKeySize]byte
+ 	copy(xverifyKey[:], verifyKey)
+-	return signencrypt.NewDecodingReader(&xencKey, &xverifyKey, libkb.SignaturePrefixChatAttachment, nonce, r)
++	return signencrypt.NewDecodingReader(&xencKey, &xverifyKey, kbcrypto.SignaturePrefixChatAttachment, nonce, r)
+ }
+diff --git a/go/chat/attachments/store.go b/go/chat/attachments/store.go
+index 5064f8611c5..6bfa2e5b87a 100644
+--- a/go/chat/attachments/store.go
++++ b/go/chat/attachments/store.go
+@@ -12,6 +12,7 @@ import (
+ 	"sync"
+ 
+ 	"github.com/keybase/client/go/chat/types"
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/client/go/logger"
+ 	"github.com/keybase/go-crypto/ed25519"
+@@ -376,7 +377,7 @@ func (a *S3Store) StreamAsset(ctx context.Context, params chat1.S3Params, asset
+ 	// a bunch of these calls for a given playback session.
+ 	source := newS3Seeker(ctx, a.GetLog(), asset, b)
+ 	return signencrypt.NewDecodingReadSeeker(ctx, a.GetLog(), source, ptsize, &xencKey, &xverifyKey,
+-		libkb.SignaturePrefixChatAttachment, &nonce, a.getStreamerCache(asset)), nil
++		kbcrypto.SignaturePrefixChatAttachment, &nonce, a.getStreamerCache(asset)), nil
+ }
+ 
+ func (a *S3Store) startUpload(ctx context.Context, task *UploadTask, encrypter *SignEncrypter) {
+diff --git a/go/chat/boxer.go b/go/chat/boxer.go
+index 92b8630e6be..4ace273ac2c 100644
+--- a/go/chat/boxer.go
++++ b/go/chat/boxer.go
+@@ -27,6 +27,7 @@ import (
+ 	"github.com/keybase/client/go/chat/storage"
+ 	"github.com/keybase/client/go/chat/types"
+ 	"github.com/keybase/client/go/chat/utils"
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/client/go/logger"
+ 	"github.com/keybase/client/go/protocol/chat1"
+@@ -771,7 +772,7 @@ func (b *Boxer) unboxV2orV3orV4(ctx context.Context, boxed chat1.MessageBoxed,
+ 
+ 	// Open header and verify against VerifyKey
+ 	headerPacked, err := b.signEncryptOpen(boxed.HeaderCiphertext.AsSignEncrypted(), headerEncryptionKey,
+-		boxed.VerifyKey, libkb.SignaturePrefixChatMBv2)
++		boxed.VerifyKey, kbcrypto.SignaturePrefixChatMBv2)
+ 	if err != nil {
+ 		return nil, NewPermanentUnboxingError(err)
+ 	}
+@@ -1477,7 +1478,7 @@ func (b *Boxer) boxV1(messagePlaintext chat1.MessagePlaintext, key types.CryptKe
+ 	}
+ 
+ 	// sign the header and insert the signature
+-	sig, err := b.signMarshal(header, signingKeyPair, libkb.SignaturePrefixChatMBv1)
++	sig, err := b.signMarshal(header, signingKeyPair, kbcrypto.SignaturePrefixChatMBv1)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+@@ -1600,7 +1601,7 @@ func (b *Boxer) boxV2orV3orV4(ctx context.Context, messagePlaintext chat1.Messag
+ 
+ 	// signencrypt the header
+ 	headerSealed, err := b.signEncryptMarshal(headerVersioned, headerEncryptionKey,
+-		signingKeyPair, libkb.SignaturePrefixChatMBv2)
++		signingKeyPair, kbcrypto.SignaturePrefixChatMBv2)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+@@ -1676,7 +1677,7 @@ func (b *Boxer) open(data chat1.EncryptedData, key libkb.NaclSecretBoxKey) ([]by
+ 
+ // signMarshal signs data with a NaclSigningKeyPair, returning a chat1.SignatureInfo.
+ // It marshals data before signing.
+-func (b *Boxer) signMarshal(data interface{}, kp libkb.NaclSigningKeyPair, prefix libkb.SignaturePrefix) (chat1.SignatureInfo, error) {
++func (b *Boxer) signMarshal(data interface{}, kp libkb.NaclSigningKeyPair, prefix kbcrypto.SignaturePrefix) (chat1.SignatureInfo, error) {
+ 	encoded, err := b.marshal(data)
+ 	if err != nil {
+ 		return chat1.SignatureInfo{}, err
+@@ -1688,7 +1689,7 @@ func (b *Boxer) signMarshal(data interface{}, kp libkb.NaclSigningKeyPair, prefi
+ // signEncryptMarshal signencrypts data given an encryption and signing key, returning a chat1.SignEncryptedData.
+ // It marshals data before signing.
+ func (b *Boxer) signEncryptMarshal(data interface{}, encryptionKey libkb.NaclSecretBoxKey,
+-	signingKeyPair libkb.NaclSigningKeyPair, prefix libkb.SignaturePrefix) (chat1.SignEncryptedData, error) {
++	signingKeyPair libkb.NaclSigningKeyPair, prefix kbcrypto.SignaturePrefix) (chat1.SignEncryptedData, error) {
+ 	encoded, err := b.marshal(data)
+ 	if err != nil {
+ 		return chat1.SignEncryptedData{}, err
+@@ -1698,7 +1699,7 @@ func (b *Boxer) signEncryptMarshal(data interface{}, encryptionKey libkb.NaclSec
+ }
+ 
+ // sign signs msg with a NaclSigningKeyPair, returning a chat1.SignatureInfo.
+-func (b *Boxer) sign(msg []byte, kp libkb.NaclSigningKeyPair, prefix libkb.SignaturePrefix) (chat1.SignatureInfo, error) {
++func (b *Boxer) sign(msg []byte, kp libkb.NaclSigningKeyPair, prefix kbcrypto.SignaturePrefix) (chat1.SignatureInfo, error) {
+ 	sig, err := kp.SignV2(msg, prefix)
+ 	if err != nil {
+ 		return chat1.SignatureInfo{}, err
+@@ -1719,7 +1720,7 @@ func (b *Boxer) sign(msg []byte, kp libkb.NaclSigningKeyPair, prefix libkb.Signa
+ 
+ // signEncrypt signencrypts msg.
+ func (b *Boxer) signEncrypt(msg []byte, encryptionKey libkb.NaclSecretBoxKey,
+-	signingKeyPair libkb.NaclSigningKeyPair, prefix libkb.SignaturePrefix) (chat1.SignEncryptedData, error) {
++	signingKeyPair libkb.NaclSigningKeyPair, prefix kbcrypto.SignaturePrefix) (chat1.SignEncryptedData, error) {
+ 	if signingKeyPair.Private == nil {
+ 		return chat1.SignEncryptedData{}, libkb.NoSecretKeyError{}
+ 	}
+@@ -1750,7 +1751,7 @@ func (b *Boxer) signEncrypt(msg []byte, encryptionKey libkb.NaclSecretBoxKey,
+ 
+ // signEncryptOpen opens and verifies chat1.SignEncryptedData.
+ func (b *Boxer) signEncryptOpen(data chat1.SignEncryptedData, encryptionKey libkb.NaclSecretBoxKey,
+-	verifyKID []byte, prefix libkb.SignaturePrefix) ([]byte, error) {
++	verifyKID []byte, prefix kbcrypto.SignaturePrefix) ([]byte, error) {
+ 	var encKey [signencrypt.SecretboxKeySize]byte = encryptionKey
+ 
+ 	verifyKey := libkb.KIDToNaclSigningKeyPublic(verifyKID)
+@@ -1827,7 +1828,7 @@ func (b *Boxer) verifyMessageHeaderV1(ctx context.Context, header chat1.HeaderPl
+ 	if err != nil {
+ 		return verifyMessageRes{}, NewPermanentUnboxingError(err)
+ 	}
+-	if !b.verify(hpack, *header.HeaderSignature, libkb.SignaturePrefixChatMBv1) {
++	if !b.verify(hpack, *header.HeaderSignature, kbcrypto.SignaturePrefixChatMBv1) {
+ 		return verifyMessageRes{}, NewPermanentUnboxingError(libkb.BadSigError{E: "header signature invalid"})
+ 	}
+ 
+@@ -1837,7 +1838,7 @@ func (b *Boxer) verifyMessageHeaderV1(ctx context.Context, header chat1.HeaderPl
+ }
+ 
+ // verify verifies the signature of data using SignatureInfo.
+-func (b *Boxer) verify(data []byte, si chat1.SignatureInfo, prefix libkb.SignaturePrefix) bool {
++func (b *Boxer) verify(data []byte, si chat1.SignatureInfo, prefix kbcrypto.SignaturePrefix) bool {
+ 	sigInfo := libkb.NaclSigInfo{
+ 		Version: si.V,
+ 		Prefix:  prefix,
+diff --git a/go/chat/signencrypt/codec.go b/go/chat/signencrypt/codec.go
+index c317ebca919..9b6a6d8a957 100644
+--- a/go/chat/signencrypt/codec.go
++++ b/go/chat/signencrypt/codec.go
+@@ -130,7 +130,7 @@ import (
+ 	"fmt"
+ 	"io"
+ 
+-	"github.com/keybase/client/go/libkb"
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/go-crypto/ed25519"
+ 	"golang.org/x/crypto/nacl/secretbox"
+ )
+@@ -159,7 +159,7 @@ func makeChunkNonce(nonce Nonce, chunkNum uint64) SecretboxNonce {
+ 	return &ret
+ }
+ 
+-func makeSignatureInput(plaintext []byte, encKey SecretboxKey, signaturePrefix libkb.SignaturePrefix, chunkNonce SecretboxNonce) []byte {
++func makeSignatureInput(plaintext []byte, encKey SecretboxKey, signaturePrefix kbcrypto.SignaturePrefix, chunkNonce SecretboxNonce) []byte {
+ 	// Check that the prefix does not include any null bytes.
+ 	if bytes.IndexByte([]byte(signaturePrefix), 0x00) != -1 {
+ 		panic(fmt.Sprintf("signature prefix contains null byte: %q", signaturePrefix))
+@@ -185,7 +185,7 @@ func getPlaintextPacketLen(cipherChunkLen int64) int64 {
+ 	return cipherChunkLen - (secretbox.Overhead + ed25519.SignatureSize)
+ }
+ 
+-func sealPacket(plaintext []byte, encKey SecretboxKey, signKey SignKey, signaturePrefix libkb.SignaturePrefix, nonce SecretboxNonce) []byte {
++func sealPacket(plaintext []byte, encKey SecretboxKey, signKey SignKey, signaturePrefix kbcrypto.SignaturePrefix, nonce SecretboxNonce) []byte {
+ 	signatureInput := makeSignatureInput(plaintext, encKey, signaturePrefix, nonce)
+ 	signature := ed25519.Sign(signKey[:], signatureInput)
+ 	signedChunk := append(signature[:], plaintext...)
+@@ -193,7 +193,7 @@ func sealPacket(plaintext []byte, encKey SecretboxKey, signKey SignKey, signatur
+ 	return packet
+ }
+ 
+-func openPacket(packet []byte, encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix libkb.SignaturePrefix, nonce SecretboxNonce) ([]byte, error) {
++func openPacket(packet []byte, encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix kbcrypto.SignaturePrefix, nonce SecretboxNonce) ([]byte, error) {
+ 	signedChunk, secretboxValid := secretbox.Open(nil, packet, nonce, encKey)
+ 	if !secretboxValid {
+ 		return nil, NewError(BadSecretbox, "secretbox failed to open")
+@@ -219,14 +219,14 @@ func openPacket(packet []byte, encKey SecretboxKey, verifyKey VerifyKey, signatu
+ type Encoder struct {
+ 	encKey            SecretboxKey
+ 	signKey           SignKey
+-	signaturePrefix   libkb.SignaturePrefix
++	signaturePrefix   kbcrypto.SignaturePrefix
+ 	nonce             Nonce
+ 	buf               []byte
+ 	chunkNum          uint64
+ 	plaintextChunkLen int64
+ }
+ 
+-func NewEncoder(encKey SecretboxKey, signKey SignKey, signaturePrefix libkb.SignaturePrefix, nonce Nonce) *Encoder {
++func NewEncoder(encKey SecretboxKey, signKey SignKey, signaturePrefix kbcrypto.SignaturePrefix, nonce Nonce) *Encoder {
+ 	return &Encoder{
+ 		encKey:            encKey,
+ 		signKey:           signKey,
+@@ -289,7 +289,7 @@ func (e *Encoder) ChangePlaintextChunkLenForTesting(plaintextChunkLen int64) {
+ type Decoder struct {
+ 	encKey          SecretboxKey
+ 	verifyKey       VerifyKey
+-	signaturePrefix libkb.SignaturePrefix
++	signaturePrefix kbcrypto.SignaturePrefix
+ 	nonce           Nonce
+ 	buf             []byte
+ 	chunkNum        uint64
+@@ -297,7 +297,7 @@ type Decoder struct {
+ 	packetLen       int64
+ }
+ 
+-func NewDecoder(encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix libkb.SignaturePrefix, nonce Nonce) *Decoder {
++func NewDecoder(encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix kbcrypto.SignaturePrefix, nonce Nonce) *Decoder {
+ 	return &Decoder{
+ 		encKey:          encKey,
+ 		verifyKey:       verifyKey,
+@@ -473,14 +473,14 @@ func (r *codecReadWrapper) Read(callerBuf []byte) (int, error) {
+ 
+ // NewEncodingReader creates a new streaming encoder.
+ // The signaturePrefix argument must not contain the null container.
+-func NewEncodingReader(encKey SecretboxKey, signKey SignKey, signaturePrefix libkb.SignaturePrefix, nonce Nonce, innerReader io.Reader) io.Reader {
++func NewEncodingReader(encKey SecretboxKey, signKey SignKey, signaturePrefix kbcrypto.SignaturePrefix, nonce Nonce, innerReader io.Reader) io.Reader {
+ 	return &codecReadWrapper{
+ 		innerReader: innerReader,
+ 		codec:       &encoderCodecShim{NewEncoder(encKey, signKey, signaturePrefix, nonce)},
+ 	}
+ }
+ 
+-func NewDecodingReader(encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix libkb.SignaturePrefix, nonce Nonce, innerReader io.Reader) io.Reader {
++func NewDecodingReader(encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix kbcrypto.SignaturePrefix, nonce Nonce, innerReader io.Reader) io.Reader {
+ 	return &codecReadWrapper{
+ 		innerReader: innerReader,
+ 		codec:       NewDecoder(encKey, verifyKey, signaturePrefix, nonce),
+@@ -545,14 +545,14 @@ func GetPlaintextSize(cipherLen int64) int64 {
+ }
+ 
+ // SealWhole seals all at once using the streaming encoding.
+-func SealWhole(plaintext []byte, encKey SecretboxKey, signKey SignKey, signaturePrefix libkb.SignaturePrefix, nonce Nonce) []byte {
++func SealWhole(plaintext []byte, encKey SecretboxKey, signKey SignKey, signaturePrefix kbcrypto.SignaturePrefix, nonce Nonce) []byte {
+ 	encoder := NewEncoder(encKey, signKey, signaturePrefix, nonce)
+ 	output := encoder.Write(plaintext)
+ 	output = append(output, encoder.Finish()...)
+ 	return output
+ }
+ 
+-func OpenWhole(sealed []byte, encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix libkb.SignaturePrefix, nonce Nonce) ([]byte, error) {
++func OpenWhole(sealed []byte, encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix kbcrypto.SignaturePrefix, nonce Nonce) ([]byte, error) {
+ 	decoder := NewDecoder(encKey, verifyKey, signaturePrefix, nonce)
+ 	output, err := decoder.Write(sealed)
+ 	if err != nil {
+diff --git a/go/chat/signencrypt/codec_test.go b/go/chat/signencrypt/codec_test.go
+index c2ec7262419..c95a2d0baae 100644
+--- a/go/chat/signencrypt/codec_test.go
++++ b/go/chat/signencrypt/codec_test.go
+@@ -11,7 +11,7 @@ import (
+ 
+ 	"golang.org/x/crypto/nacl/secretbox"
+ 
+-	"github.com/keybase/client/go/libkb"
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/go-crypto/ed25519"
+ 	"github.com/stretchr/testify/require"
+ )
+@@ -51,8 +51,8 @@ func zeroSignKey() SignKey {
+ 	return &key
+ }
+ 
+-func testingPrefix() libkb.SignaturePrefix {
+-	return libkb.SignaturePrefixTesting
++func testingPrefix() kbcrypto.SignaturePrefix {
++	return kbcrypto.SignaturePrefixTesting
+ }
+ 
+ func zeroEncoder() *Encoder {
+@@ -566,7 +566,7 @@ func TestCoverageHacks(t *testing.T) {
+ }
+ 
+ func TestNullInPrefix(t *testing.T) {
+-	encoder := NewEncoder(zeroSecretboxKey(), zeroSignKey(), libkb.SignaturePrefix("Keybase-bad-prefix\x00"), zeroNonce())
++	encoder := NewEncoder(zeroSecretboxKey(), zeroSignKey(), kbcrypto.SignaturePrefix("Keybase-bad-prefix\x00"), zeroNonce())
+ 	encoder.Write([]byte("kaboom"))
+ 	shouldPanic(t, func() {
+ 		encoder.Finish()
+diff --git a/go/chat/signencrypt/example/main.go b/go/chat/signencrypt/example/main.go
+index 0b1e4b6a0a9..618c64d39c2 100644
+--- a/go/chat/signencrypt/example/main.go
++++ b/go/chat/signencrypt/example/main.go
+@@ -10,7 +10,7 @@ import (
+ 
+ 	docopt "github.com/docopt/docopt-go"
+ 	"github.com/keybase/client/go/chat/signencrypt"
+-	"github.com/keybase/client/go/libkb"
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/go-crypto/ed25519"
+ )
+ 
+@@ -51,7 +51,7 @@ func zeroSignKey() signencrypt.SignKey {
+ 	return &key
+ }
+ 
+-func seal(enckey signencrypt.SecretboxKey, signkey signencrypt.SignKey, signaturePrefix libkb.SignaturePrefix, nonce signencrypt.Nonce, chunklen int64) error {
++func seal(enckey signencrypt.SecretboxKey, signkey signencrypt.SignKey, signaturePrefix kbcrypto.SignaturePrefix, nonce signencrypt.Nonce, chunklen int64) error {
+ 	encoder := signencrypt.NewEncoder(enckey, signkey, signaturePrefix, nonce)
+ 	if chunklen != 0 {
+ 		encoder.ChangePlaintextChunkLenForTesting(chunklen)
+@@ -78,7 +78,7 @@ func seal(enckey signencrypt.SecretboxKey, signkey signencrypt.SignKey, signatur
+ 	return nil
+ }
+ 
+-func open(enckey signencrypt.SecretboxKey, verifykey signencrypt.VerifyKey, signaturePrefix libkb.SignaturePrefix, nonce signencrypt.Nonce, chunklen int64) error {
++func open(enckey signencrypt.SecretboxKey, verifykey signencrypt.VerifyKey, signaturePrefix kbcrypto.SignaturePrefix, nonce signencrypt.Nonce, chunklen int64) error {
+ 	decoder := signencrypt.NewDecoder(enckey, verifykey, signaturePrefix, nonce)
+ 	if chunklen != 0 {
+ 		decoder.ChangePlaintextChunkLenForTesting(chunklen)
+@@ -143,10 +143,10 @@ Options:
+ 		copy(verifykey[:], decodeHexArg(arguments["--verifykey"].(string)))
+ 	}
+ 
+-	signaturePrefix := libkb.SignaturePrefixTesting
++	signaturePrefix := kbcrypto.SignaturePrefixTesting
+ 	if arguments["--sigprefix"] != nil {
+ 		signaturePrefixStr := arguments["--sigprefix"].(string)
+-		signaturePrefix = libkb.SignaturePrefix(signaturePrefixStr)
++		signaturePrefix = kbcrypto.SignaturePrefix(signaturePrefixStr)
+ 	}
+ 
+ 	nonce := zeroNonce()
+diff --git a/go/chat/signencrypt/seeker.go b/go/chat/signencrypt/seeker.go
+index c4552b473ea..440fc9c78f5 100644
+--- a/go/chat/signencrypt/seeker.go
++++ b/go/chat/signencrypt/seeker.go
+@@ -5,7 +5,7 @@ import (
+ 	"io"
+ 
+ 	"github.com/keybase/client/go/chat/utils"
+-	"github.com/keybase/client/go/libkb"
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/logger"
+ 
+ 	lru "github.com/hashicorp/golang-lru"
+@@ -19,7 +19,7 @@ type decodingReadSeeker struct {
+ 	source       io.ReadSeeker
+ 	encKey       SecretboxKey
+ 	verifyKey    VerifyKey
+-	sigPrefix    libkb.SignaturePrefix
++	sigPrefix    kbcrypto.SignaturePrefix
+ 	nonce        Nonce
+ 	size, offset int64
+ 	chunks       *lru.Cache
+@@ -28,7 +28,7 @@ type decodingReadSeeker struct {
+ var _ io.ReadSeeker = (*decodingReadSeeker)(nil)
+ 
+ func NewDecodingReadSeeker(ctx context.Context, log logger.Logger, source io.ReadSeeker, size int64,
+-	encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix libkb.SignaturePrefix, nonce Nonce,
++	encKey SecretboxKey, verifyKey VerifyKey, signaturePrefix kbcrypto.SignaturePrefix, nonce Nonce,
+ 	c *lru.Cache) io.ReadSeeker {
+ 	if c == nil {
+ 		// If the caller didn't give us a cache, then let's just make one
+diff --git a/go/engine/crypto.go b/go/engine/crypto.go
+index 708c3ec3cec..89149cea4d0 100644
+--- a/go/engine/crypto.go
++++ b/go/engine/crypto.go
+@@ -6,6 +6,7 @@ package engine
+ import (
+ 	"sync"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"golang.org/x/crypto/nacl/box"
+@@ -75,7 +76,7 @@ func SignED25519ForKBFS(ctx context.Context, g *libkb.GlobalContext, getSecretUI
+ 	}
+ 
+ 	var sigInfo *libkb.NaclSigInfo
+-	sigInfo, err = kp.SignV2(arg.Msg, libkb.SignaturePrefixKBFS)
++	sigInfo, err = kp.SignV2(arg.Msg, kbcrypto.SignaturePrefixKBFS)
+ 	if err != nil {
+ 		return
+ 	}
+diff --git a/go/kbcrypto/signature_prefix.go b/go/kbcrypto/signature_prefix.go
+new file mode 100644
+index 00000000000..70dbf6a3fae
+--- /dev/null
++++ b/go/kbcrypto/signature_prefix.go
+@@ -0,0 +1,28 @@
++// Copyright 2018 Keybase, Inc. All rights reserved. Use of
++// this source code is governed by the included BSD license.
++
++package kbcrypto
++
++import "bytes"
++
++type SignaturePrefix string
++
++const (
++	SignaturePrefixKBFS           SignaturePrefix = "Keybase-KBFS-1"
++	SignaturePrefixSigchain       SignaturePrefix = "Keybase-Sigchain-1"
++	SignaturePrefixChatAttachment SignaturePrefix = "Keybase-Chat-Attachment-1"
++	SignaturePrefixTesting        SignaturePrefix = "Keybase-Testing-1"
++	SignaturePrefixNIST           SignaturePrefix = "Keybase-Auth-NIST-1"
++	// Chat prefixes for each MessageBoxedVersion.
++	SignaturePrefixChatMBv1 SignaturePrefix = "Keybase-Chat-1"
++	SignaturePrefixChatMBv2 SignaturePrefix = "Keybase-Chat-2"
++)
++
++func (p SignaturePrefix) HasNullByte() bool {
++	return bytes.IndexByte([]byte(p), byte(0)) != -1
++}
++
++func (p SignaturePrefix) Prefix(msg []byte) []byte {
++	prefix := append([]byte(p), 0)
++	return append(prefix, msg...)
++}
+diff --git a/go/libkb/constants.go b/go/libkb/constants.go
+index 14538f43da7..b4c8d26dd9a 100644
+--- a/go/libkb/constants.go
++++ b/go/libkb/constants.go
+@@ -580,17 +580,6 @@ const (
+ 	PGPAssertionKey = "pgp"
+ )
+ 
+-const (
+-	SignaturePrefixKBFS           SignaturePrefix = "Keybase-KBFS-1"
+-	SignaturePrefixSigchain       SignaturePrefix = "Keybase-Sigchain-1"
+-	SignaturePrefixChatAttachment SignaturePrefix = "Keybase-Chat-Attachment-1"
+-	SignaturePrefixTesting        SignaturePrefix = "Keybase-Testing-1"
+-	SignaturePrefixNIST           SignaturePrefix = "Keybase-Auth-NIST-1"
+-	// Chat prefixes for each MessageBoxedVersion.
+-	SignaturePrefixChatMBv1 SignaturePrefix = "Keybase-Chat-1"
+-	SignaturePrefixChatMBv2 SignaturePrefix = "Keybase-Chat-2"
+-)
+-
+ const (
+ 	NotificationDismissPGPPrefix = "pgp_secret_store"
+ 	NotificationDismissPGPValue  = "dismissed"
+diff --git a/go/libkb/naclwrap.go b/go/libkb/naclwrap.go
+index a362522fa0f..272d8e0852d 100644
+--- a/go/libkb/naclwrap.go
++++ b/go/libkb/naclwrap.go
+@@ -21,14 +21,14 @@ import (
+ type NaclSignature [ed25519.SignatureSize]byte
+ 
+ type NaclSigInfo struct {
+-	Kid      keybase1.BinaryKID `codec:"key"`
+-	Payload  []byte             `codec:"payload,omitempty"`
+-	Sig      NaclSignature      `codec:"sig"`
+-	SigType  kbcrypto.AlgoType  `codec:"sig_type"`
+-	HashType int                `codec:"hash_type"`
+-	Detached bool               `codec:"detached"`
+-	Version  int                `codec:"version,omitempty"`
+-	Prefix   SignaturePrefix    `codec:"prefix,omitempty"`
++	Kid      keybase1.BinaryKID       `codec:"key"`
++	Payload  []byte                   `codec:"payload,omitempty"`
++	Sig      NaclSignature            `codec:"sig"`
++	SigType  kbcrypto.AlgoType        `codec:"sig_type"`
++	HashType int                      `codec:"hash_type"`
++	Detached bool                     `codec:"detached"`
++	Version  int                      `codec:"version,omitempty"`
++	Prefix   kbcrypto.SignaturePrefix `codec:"prefix,omitempty"`
+ }
+ 
+ type NaclEncryptionInfo struct {
+@@ -348,32 +348,21 @@ func (k NaclSigningKeyPair) SecretSymmetricKey(reason EncryptionReason) (NaclSec
+ 	return NaclSecretBoxKey{}, KeyCannotEncryptError{}
+ }
+ 
+-type SignaturePrefix string
+-
+ const encryptionReasonMinLength = 8
+ 
+ type EncryptionReason string
+ 
+-func (p SignaturePrefix) hasNullByte() bool {
+-	return bytes.IndexByte([]byte(p), byte(0)) != -1
+-}
+-
+-func (p SignaturePrefix) Prefix(msg []byte) []byte {
+-	prefix := append([]byte(p), 0)
+-	return append(prefix, msg...)
+-}
+-
+ func (r EncryptionReason) Bytes() []byte {
+ 	return []byte(r)
+ }
+ 
+-func (k NaclSigningKeyPair) SignV2(msg []byte, prefix SignaturePrefix) (ret *NaclSigInfo, err error) {
++func (k NaclSigningKeyPair) SignV2(msg []byte, prefix kbcrypto.SignaturePrefix) (ret *NaclSigInfo, err error) {
+ 	if k.Private == nil {
+ 		err = NoSecretKeyError{}
+ 		return
+ 	}
+ 
+-	if prefix.hasNullByte() || len(prefix) == 0 {
++	if prefix.HasNullByte() || len(prefix) == 0 {
+ 		err = BadSignaturePrefixError{}
+ 		return
+ 	}
+diff --git a/go/libkb/naclwrap_test.go b/go/libkb/naclwrap_test.go
+index c5d19fdc714..880969f4095 100644
+--- a/go/libkb/naclwrap_test.go
++++ b/go/libkb/naclwrap_test.go
+@@ -8,6 +8,7 @@ import (
+ 	"encoding/hex"
+ 	"testing"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/stretchr/testify/require"
+ )
+ 
+@@ -236,7 +237,7 @@ func TestNaclPrefixedSigs(t *testing.T) {
+ 
+ 	msg := []byte("test message")
+ 
+-	sig, err := keyPair.SignV2(msg, SignaturePrefixChatMBv1)
++	sig, err := keyPair.SignV2(msg, kbcrypto.SignaturePrefixChatMBv1)
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+@@ -256,7 +257,7 @@ func TestNaclPrefixedSigs(t *testing.T) {
+ 	}
+ 
+ 	sig.Version = 2
+-	sig.Prefix = SignaturePrefixKBFS
++	sig.Prefix = kbcrypto.SignaturePrefixKBFS
+ 	_, err = sig.Verify()
+ 	if err == nil {
+ 		t.Fatal("expected an error after we jiggled the prefix to the wrong one")
+@@ -265,14 +266,14 @@ func TestNaclPrefixedSigs(t *testing.T) {
+ 		t.Fatal("expected a VerificationError")
+ 	}
+ 
+-	_, err = keyPair.SignV2(msg, SignaturePrefix("a\x00b"))
++	_, err = keyPair.SignV2(msg, kbcrypto.SignaturePrefix("a\x00b"))
+ 	if err == nil {
+ 		t.Fatal("expected a BadSignaturePrefixError")
+ 	}
+ 	if _, ok := err.(BadSignaturePrefixError); !ok {
+ 		t.Fatal("expected a BadSignaturePrefixError")
+ 	}
+-	_, err = keyPair.SignV2(msg, SignaturePrefix(""))
++	_, err = keyPair.SignV2(msg, kbcrypto.SignaturePrefix(""))
+ 	if err == nil {
+ 		t.Fatal("expected a BadSignaturePrefixError")
+ 	}
+diff --git a/go/libkb/nist.go b/go/libkb/nist.go
+index 557fb6b7212..fbd229b6886 100644
+--- a/go/libkb/nist.go
++++ b/go/libkb/nist.go
+@@ -5,10 +5,12 @@ import (
+ 	"encoding/base64"
+ 	"encoding/hex"
+ 	"errors"
+-	"github.com/keybase/client/go/protocol/keybase1"
+-	context "golang.org/x/net/context"
+ 	"sync"
+ 	"time"
++
++	"github.com/keybase/client/go/kbcrypto"
++	"github.com/keybase/client/go/protocol/keybase1"
++	context "golang.org/x/net/context"
+ )
+ 
+ //
+@@ -265,7 +267,7 @@ func (n *NIST) generate(ctx context.Context, uid keybase1.UID, deviceID keybase1
+ 	if err != nil {
+ 		return err
+ 	}
+-	sigInfo, err = naclKey.SignV2(payloadPacked, SignaturePrefixNIST)
++	sigInfo, err = naclKey.SignV2(payloadPacked, kbcrypto.SignaturePrefixNIST)
+ 	if err != nil {
+ 		return err
+ 	}
+
+From 6bfb0d8806507f9fd2ed2ce82c48501f88c34e53 Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Thu, 30 Aug 2018 00:05:19 -0700
+Subject: [PATCH 06/12] Move kbpackets out
+
+---
+ go/kbcrypto/kbpackets.go   | 266 +++++++++++++++++++++++++++++++++++++
+ go/kbcrypto/util.go        |  17 +++
+ go/libkb/constants.go      |  31 -----
+ go/libkb/errors.go         |   9 --
+ go/libkb/kbpackets.go      | 213 +----------------------------
+ go/libkb/kbpackets_test.go |   7 +-
+ go/libkb/msgpack.go        |   5 +-
+ go/libkb/naclwrap.go       |  14 +-
+ go/libkb/per_user_key.go   |   3 +-
+ go/libkb/skb.go            |   6 +-
+ go/libkb/skb_keyring.go    |   7 +-
+ go/libkb/util.go           |   6 +-
+ 12 files changed, 313 insertions(+), 271 deletions(-)
+ create mode 100644 go/kbcrypto/kbpackets.go
+ create mode 100644 go/kbcrypto/util.go
+
+diff --git a/go/kbcrypto/kbpackets.go b/go/kbcrypto/kbpackets.go
+new file mode 100644
+index 00000000000..5e63fb119e7
+--- /dev/null
++++ b/go/kbcrypto/kbpackets.go
+@@ -0,0 +1,266 @@
++// Copyright 2018 Keybase, Inc. All rights reserved. Use of
++// this source code is governed by the included BSD license.
++
++package kbcrypto
++
++// Code for encoding and decoding Keybase packet types.
++
++import (
++	"bytes"
++	"crypto/sha256"
++	"encoding/base64"
++	"errors"
++	"fmt"
++	"io"
++
++	"github.com/keybase/go-codec/codec"
++)
++
++type PacketVersion int
++
++const (
++	KeybasePacketV1 PacketVersion = 1
++)
++
++// PacketTag are tags for OpenPGP and Keybase packets. It is a uint to
++// be backwards compatible with older versions of codec that encoded
++// positive ints as uints.
++type PacketTag uint
++
++const (
++	TagP3skb      PacketTag = 513
++	TagSignature  PacketTag = 514
++	TagEncryption PacketTag = 515
++)
++
++func (t PacketTag) String() string {
++	switch t {
++	case TagP3skb:
++		return "PacketTag(P3skb)"
++	case TagSignature:
++		return "PacketTag(Signature)"
++	case TagEncryption:
++		return "PacketTag(Encryption)"
++	default:
++		return fmt.Sprintf("PacketTag(%d)", uint(t))
++	}
++}
++
++type Packetable interface {
++	GetTagAndVersion() (PacketTag, PacketVersion)
++}
++
++func EncodePacket(p Packetable, w io.Writer) error {
++	packet, err := newKeybasePacket(p)
++	if err != nil {
++		return err
++	}
++	return packet.encodeTo(w)
++}
++
++func EncodePacketToBytes(p Packetable) ([]byte, error) {
++	packet, err := newKeybasePacket(p)
++	if err != nil {
++		return nil, err
++	}
++	return packet.encode()
++}
++
++func EncodePacketToArmoredString(p Packetable) (string, error) {
++	packet, err := newKeybasePacket(p)
++	if err != nil {
++		return "", err
++	}
++	return packet.armoredEncode()
++}
++
++type UnmarshalError struct {
++	ExpectedTag PacketTag
++	Tag         PacketTag
++}
++
++func (u UnmarshalError) Error() string {
++	return fmt.Sprintf("Expected %s packet, got %s packet", u.ExpectedTag, u.Tag)
++}
++
++func DecodePacket(decoder *codec.Decoder, body Packetable) error {
++	// TODO: Do something with the version too?
++	tag, _ := body.GetTagAndVersion()
++	p := KeybasePacket{
++		Body: body,
++	}
++	err := decoder.Decode(&p)
++	if err != nil {
++		return err
++	}
++
++	if p.Tag != tag {
++		return UnmarshalError{ExpectedTag: p.Tag, Tag: tag}
++	}
++
++	// TODO: Figure out a way to do the same reencode check as in
++	// DecodePacketFromBytes.
++
++	return p.checkHash()
++}
++
++func DecodePacketFromBytes(data []byte, body Packetable) error {
++	ch := CodecHandle()
++	decoder := codec.NewDecoderBytes(data, ch)
++
++	// TODO: Do something with the version too?
++	tag, _ := body.GetTagAndVersion()
++	p := KeybasePacket{
++		Body: body,
++	}
++	err := decoder.Decode(&p)
++	if err != nil {
++		return err
++	}
++
++	if decoder.NumBytesRead() != len(data) {
++		return fmt.Errorf("Did not consume entire buffer: %d byte(s) left", len(data)-decoder.NumBytesRead())
++	}
++
++	if p.Tag != tag {
++		return UnmarshalError{ExpectedTag: p.Tag, Tag: tag}
++	}
++
++	// Test for nonstandard msgpack data (which could be maliciously crafted)
++	// by re-encoding and making sure we get the same thing.
++	// https://github.com/keybase/client/issues/423
++	//
++	// Ideally this should be done at a lower level, but our
++	// msgpack library doesn't sort maps the way we expect. See
++	// https://github.com/ugorji/go/issues/103
++	if reencoded, err := p.encode(); err != nil {
++		return err
++	} else if !bytes.Equal(reencoded, data) {
++		return FishyMsgpackError{data, reencoded}
++	}
++
++	return p.checkHash()
++}
++
++type FishyMsgpackError struct {
++	original  []byte
++	reencoded []byte
++}
++
++func (e FishyMsgpackError) Error() string {
++	return fmt.Sprintf("Original msgpack data didn't match re-encoded version: reencoded=%x != original=%x", e.reencoded, e.original)
++}
++
++func CodecHandle() *codec.MsgpackHandle {
++	var mh codec.MsgpackHandle
++	mh.WriteExt = true
++	return &mh
++}
++
++const SHA256Code = 8
++
++type KeybasePacketHash struct {
++	Type  int    `codec:"type"`
++	Value []byte `codec:"value"`
++}
++
++type KeybasePacket struct {
++	Body    Packetable         `codec:"body"`
++	Hash    *KeybasePacketHash `codec:"hash,omitempty"`
++	Tag     PacketTag          `codec:"tag"`
++	Version PacketVersion      `codec:"version"`
++}
++
++func newKeybasePacket(body Packetable) (*KeybasePacket, error) {
++	tag, version := body.GetTagAndVersion()
++	ret := KeybasePacket{
++		Body:    body,
++		Tag:     tag,
++		Version: version,
++		Hash: &KeybasePacketHash{
++			Type:  SHA256Code,
++			Value: []byte{},
++		},
++	}
++
++	hashBytes, hashErr := ret.hashSum()
++	if hashErr != nil {
++		return nil, hashErr
++	}
++	ret.Hash.Value = hashBytes
++	return &ret, nil
++}
++
++// TODO: Remove.
++func NewKeybasePacket(body Packetable) (*KeybasePacket, error) {
++	return newKeybasePacket(body)
++}
++
++func (p *KeybasePacket) hashToBytes() ([]byte, error) {
++	// We don't include the Hash field in the encoded bytes that we hash,
++	// because if we did then the result wouldn't be stable. To work around
++	// that, we make a copy of the packet and overwrite the Hash field with
++	// an empty slice.
++	packetCopy := *p
++	packetCopy.Hash = &KeybasePacketHash{
++		Type:  SHA256Code,
++		Value: []byte{},
++	}
++	return packetCopy.hashSum()
++}
++
++func (p *KeybasePacket) hashSum() ([]byte, error) {
++	if len(p.Hash.Value) != 0 {
++		return nil, errors.New("cannot compute hash with Value present")
++	}
++	encoded, err := p.encode()
++	if err != nil {
++		return nil, err
++	}
++	ret := sha256.Sum256(encoded)
++	return ret[:], nil
++}
++
++func (p *KeybasePacket) checkHash() error {
++	var gotten []byte
++	var err error
++	if p.Hash == nil {
++		return nil
++	}
++	given := p.Hash.Value
++	if p.Hash.Type != SHA256Code {
++		err = fmt.Errorf("Bad hash code: %d", p.Hash.Type)
++	} else if gotten, err = p.hashToBytes(); err != nil {
++
++	} else if !FastByteArrayEq(gotten, given) {
++		err = fmt.Errorf("Bad packet hash")
++	}
++	return err
++}
++
++func (p *KeybasePacket) encode() ([]byte, error) {
++	var encoded []byte
++	err := codec.NewEncoderBytes(&encoded, CodecHandle()).Encode(p)
++	return encoded, err
++}
++
++// TODO: Remove.
++func (p *KeybasePacket) Encode() ([]byte, error) {
++	return p.encode()
++}
++
++func (p *KeybasePacket) armoredEncode() (ret string, err error) {
++	var buf bytes.Buffer
++	b64 := base64.NewEncoder(base64.StdEncoding, &buf)
++	defer b64.Close()
++	err = p.encodeTo(b64)
++	if err == nil {
++		ret = buf.String()
++	}
++	return
++}
++
++func (p *KeybasePacket) encodeTo(w io.Writer) error {
++	err := codec.NewEncoder(w, CodecHandle()).Encode(p)
++	return err
++}
+diff --git a/go/kbcrypto/util.go b/go/kbcrypto/util.go
+new file mode 100644
+index 00000000000..587b862d03a
+--- /dev/null
++++ b/go/kbcrypto/util.go
+@@ -0,0 +1,17 @@
++// Copyright 2018 Keybase, Inc. All rights reserved. Use of
++// this source code is governed by the included BSD license.
++
++package kbcrypto
++
++import (
++	"bytes"
++	"crypto/hmac"
++)
++
++func FastByteArrayEq(a, b []byte) bool {
++	return bytes.Equal(a, b)
++}
++
++func SecureByteArrayEq(a, b []byte) bool {
++	return hmac.Equal(a, b)
++}
+diff --git a/go/libkb/constants.go b/go/libkb/constants.go
+index b4c8d26dd9a..2b8938e2660 100644
+--- a/go/libkb/constants.go
++++ b/go/libkb/constants.go
+@@ -4,7 +4,6 @@
+ package libkb
+ 
+ import (
+-	"fmt"
+ 	"os"
+ 	"runtime"
+ 	"time"
+@@ -443,36 +442,6 @@ const (
+ 	HTTPRetryCount          = 6
+ )
+ 
+-type PacketVersion int
+-
+-const (
+-	KeybasePacketV1 PacketVersion = 1
+-)
+-
+-// PacketTag are tags for OpenPGP and Keybase packets. It is a uint to
+-// be backwards compatible with older versions of codec that encoded
+-// positive ints as uints.
+-type PacketTag uint
+-
+-const (
+-	TagP3skb      PacketTag = 513
+-	TagSignature  PacketTag = 514
+-	TagEncryption PacketTag = 515
+-)
+-
+-func (t PacketTag) String() string {
+-	switch t {
+-	case TagP3skb:
+-		return "PacketTag(P3skb)"
+-	case TagSignature:
+-		return "PacketTag(Signature)"
+-	case TagEncryption:
+-		return "PacketTag(Encryption)"
+-	default:
+-		return fmt.Sprintf("PacketTag(%d)", uint(t))
+-	}
+-}
+-
+ // OpenPGP hash IDs, taken from http://tools.ietf.org/html/rfc4880#section-9.4
+ const (
+ 	HashPGPMd5       = 1
+diff --git a/go/libkb/errors.go b/go/libkb/errors.go
+index b78b3fd25c7..e62d60b3728 100644
+--- a/go/libkb/errors.go
++++ b/go/libkb/errors.go
+@@ -734,15 +734,6 @@ func NewNoUsernameError() NoUsernameError { return NoUsernameError{} }
+ 
+ //=============================================================================
+ 
+-type UnmarshalError struct {
+-	ExpectedTag PacketTag
+-	Tag         PacketTag
+-}
+-
+-func (u UnmarshalError) Error() string {
+-	return fmt.Sprintf("Expected %s packet, got %s packet", u.ExpectedTag, u.Tag)
+-}
+-
+ type VerificationError struct {
+ 	Cause error
+ }
+diff --git a/go/libkb/kbpackets.go b/go/libkb/kbpackets.go
+index d2b2732a2ac..73e9c1d31b9 100644
+--- a/go/libkb/kbpackets.go
++++ b/go/libkb/kbpackets.go
+@@ -6,106 +6,14 @@ package libkb
+ // Code for encoding and decoding Keybase packet types.
+ 
+ import (
+-	"bytes"
+-	"crypto/sha256"
+ 	"encoding/base64"
+-	"errors"
+-	"fmt"
+-	"io"
+ 
+-	"github.com/keybase/go-codec/codec"
++	"github.com/keybase/client/go/kbcrypto"
+ )
+ 
+-type Packetable interface {
+-	GetTagAndVersion() (PacketTag, PacketVersion)
+-}
+-
+-func EncodePacket(p Packetable, w io.Writer) error {
+-	packet, err := newKeybasePacket(p)
+-	if err != nil {
+-		return err
+-	}
+-	return packet.encodeTo(w)
+-}
+-
+-func EncodePacketToBytes(p Packetable) ([]byte, error) {
+-	packet, err := newKeybasePacket(p)
+-	if err != nil {
+-		return nil, err
+-	}
+-	return packet.encode()
+-}
+-
+-func EncodePacketToArmoredString(p Packetable) (string, error) {
+-	packet, err := newKeybasePacket(p)
+-	if err != nil {
+-		return "", err
+-	}
+-	return packet.armoredEncode()
+-}
+-
+-func DecodePacket(decoder *codec.Decoder, body Packetable) error {
+-	// TODO: Do something with the version too?
+-	tag, _ := body.GetTagAndVersion()
+-	p := KeybasePacket{
+-		Body: body,
+-	}
+-	err := decoder.Decode(&p)
+-	if err != nil {
+-		return err
+-	}
+-
+-	if p.Tag != tag {
+-		return UnmarshalError{ExpectedTag: p.Tag, Tag: tag}
+-	}
+-
+-	// TODO: Figure out a way to do the same reencode check as in
+-	// DecodePacketFromBytes.
+-
+-	return p.checkHash()
+-}
+-
+-func DecodePacketFromBytes(data []byte, body Packetable) error {
+-	ch := codecHandle()
+-	decoder := codec.NewDecoderBytes(data, ch)
+-
+-	// TODO: Do something with the version too?
+-	tag, _ := body.GetTagAndVersion()
+-	p := KeybasePacket{
+-		Body: body,
+-	}
+-	err := decoder.Decode(&p)
+-	if err != nil {
+-		return err
+-	}
+-
+-	if decoder.NumBytesRead() != len(data) {
+-		return fmt.Errorf("Did not consume entire buffer: %d byte(s) left", len(data)-decoder.NumBytesRead())
+-	}
+-
+-	if p.Tag != tag {
+-		return UnmarshalError{ExpectedTag: p.Tag, Tag: tag}
+-	}
+-
+-	// Test for nonstandard msgpack data (which could be maliciously crafted)
+-	// by re-encoding and making sure we get the same thing.
+-	// https://github.com/keybase/client/issues/423
+-	//
+-	// Ideally this should be done at a lower level, but our
+-	// msgpack library doesn't sort maps the way we expect. See
+-	// https://github.com/ugorji/go/issues/103
+-	if reencoded, err := p.encode(); err != nil {
+-		return err
+-	} else if !bytes.Equal(reencoded, data) {
+-		return FishyMsgpackError{data, reencoded}
+-	}
+-
+-	return p.checkHash()
+-}
+-
+ func DecodeSKBPacket(data []byte) (*SKB, error) {
+ 	var info SKB
+-	err := DecodePacketFromBytes(data, &info)
++	err := kbcrypto.DecodePacketFromBytes(data, &info)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+@@ -122,7 +30,7 @@ func DecodeArmoredSKBPacket(s string) (*SKB, error) {
+ 
+ func DecodeNaclSigInfoPacket(data []byte) (NaclSigInfo, error) {
+ 	var info NaclSigInfo
+-	err := DecodePacketFromBytes(data, &info)
++	err := kbcrypto.DecodePacketFromBytes(data, &info)
+ 	if err != nil {
+ 		return NaclSigInfo{}, err
+ 	}
+@@ -139,7 +47,7 @@ func DecodeArmoredNaclSigInfoPacket(s string) (NaclSigInfo, error) {
+ 
+ func DecodeNaclEncryptionInfoPacket(data []byte) (NaclEncryptionInfo, error) {
+ 	var info NaclEncryptionInfo
+-	err := DecodePacketFromBytes(data, &info)
++	err := kbcrypto.DecodePacketFromBytes(data, &info)
+ 	if err != nil {
+ 		return NaclEncryptionInfo{}, err
+ 	}
+@@ -153,116 +61,3 @@ func DecodeArmoredNaclEncryptionInfoPacket(s string) (NaclEncryptionInfo, error)
+ 	}
+ 	return DecodeNaclEncryptionInfoPacket(b)
+ }
+-
+-type FishyMsgpackError struct {
+-	original  []byte
+-	reencoded []byte
+-}
+-
+-func (e FishyMsgpackError) Error() string {
+-	return fmt.Sprintf("Original msgpack data didn't match re-encoded version: reencoded=%x != original=%x", e.reencoded, e.original)
+-}
+-
+-func codecHandle() *codec.MsgpackHandle {
+-	var mh codec.MsgpackHandle
+-	mh.WriteExt = true
+-	return &mh
+-}
+-
+-const SHA256Code = 8
+-
+-type KeybasePacketHash struct {
+-	Type  int    `codec:"type"`
+-	Value []byte `codec:"value"`
+-}
+-
+-type KeybasePacket struct {
+-	Body    Packetable         `codec:"body"`
+-	Hash    *KeybasePacketHash `codec:"hash,omitempty"`
+-	Tag     PacketTag          `codec:"tag"`
+-	Version PacketVersion      `codec:"version"`
+-}
+-
+-func newKeybasePacket(body Packetable) (*KeybasePacket, error) {
+-	tag, version := body.GetTagAndVersion()
+-	ret := KeybasePacket{
+-		Body:    body,
+-		Tag:     tag,
+-		Version: version,
+-		Hash: &KeybasePacketHash{
+-			Type:  SHA256Code,
+-			Value: []byte{},
+-		},
+-	}
+-
+-	hashBytes, hashErr := ret.hashSum()
+-	if hashErr != nil {
+-		return nil, hashErr
+-	}
+-	ret.Hash.Value = hashBytes
+-	return &ret, nil
+-}
+-
+-func (p *KeybasePacket) hashToBytes() ([]byte, error) {
+-	// We don't include the Hash field in the encoded bytes that we hash,
+-	// because if we did then the result wouldn't be stable. To work around
+-	// that, we make a copy of the packet and overwrite the Hash field with
+-	// an empty slice.
+-	packetCopy := *p
+-	packetCopy.Hash = &KeybasePacketHash{
+-		Type:  SHA256Code,
+-		Value: []byte{},
+-	}
+-	return packetCopy.hashSum()
+-}
+-
+-func (p *KeybasePacket) hashSum() ([]byte, error) {
+-	if len(p.Hash.Value) != 0 {
+-		return nil, errors.New("cannot compute hash with Value present")
+-	}
+-	encoded, err := p.encode()
+-	if err != nil {
+-		return nil, err
+-	}
+-	ret := sha256.Sum256(encoded)
+-	return ret[:], nil
+-}
+-
+-func (p *KeybasePacket) checkHash() error {
+-	var gotten []byte
+-	var err error
+-	if p.Hash == nil {
+-		return nil
+-	}
+-	given := p.Hash.Value
+-	if p.Hash.Type != SHA256Code {
+-		err = fmt.Errorf("Bad hash code: %d", p.Hash.Type)
+-	} else if gotten, err = p.hashToBytes(); err != nil {
+-
+-	} else if !FastByteArrayEq(gotten, given) {
+-		err = fmt.Errorf("Bad packet hash")
+-	}
+-	return err
+-}
+-
+-func (p *KeybasePacket) encode() ([]byte, error) {
+-	var encoded []byte
+-	err := codec.NewEncoderBytes(&encoded, codecHandle()).Encode(p)
+-	return encoded, err
+-}
+-
+-func (p *KeybasePacket) armoredEncode() (ret string, err error) {
+-	var buf bytes.Buffer
+-	b64 := base64.NewEncoder(base64.StdEncoding, &buf)
+-	defer b64.Close()
+-	err = p.encodeTo(b64)
+-	if err == nil {
+-		ret = buf.String()
+-	}
+-	return
+-}
+-
+-func (p *KeybasePacket) encodeTo(w io.Writer) error {
+-	err := codec.NewEncoder(w, codecHandle()).Encode(p)
+-	return err
+-}
+diff --git a/go/libkb/kbpackets_test.go b/go/libkb/kbpackets_test.go
+index 8750eec4790..fbbf9ae8926 100644
+--- a/go/libkb/kbpackets_test.go
++++ b/go/libkb/kbpackets_test.go
+@@ -6,6 +6,7 @@ package libkb
+ import (
+ 	"testing"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/stretchr/testify/require"
+ )
+ 
+@@ -61,19 +62,19 @@ NGQwYjE5NTMwMzIwOWNiZDgyYWZhN2ZjNmRlZDE4YjQ5YjdiNmIyIiwic2Vxbm8iOjQsInRhZyI6
+ InNpZ25hdHVyZSJ9o3NpZ8RAbe4i3mDpfo1ECOcd0XU1JE7lRgkPUHQq7WLEEh5LbO5IAZHSm2zY
+ tuX4LPcEa+72KyrsweuAJravU8SjgL/gAKhzaWdfdHlwZSCjdGFnzQICp3ZlcnNpb24B
+ `)
+-	require.IsType(t, err, FishyMsgpackError{}, "info=%+v, err+%+v", info, err)
++	require.IsType(t, err, kbcrypto.FishyMsgpackError{}, "info=%+v, err+%+v", info, err)
+ }
+ 
+ // Guard against unexpected codec encoding changes, in particular for
+ // ints.
+ func TestHardcodedPacketEncode(t *testing.T) {
+ 	var info NaclSigInfo
+-	p, err := newKeybasePacket(&info)
++	p, err := kbcrypto.NewKeybasePacket(&info)
+ 	require.NoError(t, err)
+ 
+ 	p.Hash = nil
+ 
+-	bytes, err := p.encode()
++	bytes, err := p.Encode()
+ 	require.NoError(t, err)
+ 	// In particular, {0xcd, 0x2, 0x2} shouldn't change to
+ 	// {0xd1, 0x2, 0x2}.
+diff --git a/go/libkb/msgpack.go b/go/libkb/msgpack.go
+index 1fa5e4d4ff6..fc11d045462 100644
+--- a/go/libkb/msgpack.go
++++ b/go/libkb/msgpack.go
+@@ -6,16 +6,17 @@ package libkb
+ import (
+ 	"fmt"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/go-codec/codec"
+ )
+ 
+ func MsgpackDecode(dst interface{}, src []byte) (err error) {
+-	ch := codecHandle()
++	ch := kbcrypto.CodecHandle()
+ 	return codec.NewDecoderBytes(src, ch).Decode(dst)
+ }
+ 
+ func MsgpackEncode(src interface{}) (dst []byte, err error) {
+-	ch := codecHandle()
++	ch := kbcrypto.CodecHandle()
+ 	err = codec.NewEncoderBytes(&dst, ch).Encode(src)
+ 	return dst, err
+ }
+diff --git a/go/libkb/naclwrap.go b/go/libkb/naclwrap.go
+index 272d8e0852d..43966a848a9 100644
+--- a/go/libkb/naclwrap.go
++++ b/go/libkb/naclwrap.go
+@@ -388,7 +388,7 @@ func (k NaclSigningKeyPair) SignToString(msg []byte) (sig string, id keybase1.Si
+ 		return
+ 	}
+ 
+-	body, err := EncodePacketToBytes(naclSig)
++	body, err := kbcrypto.EncodePacketToBytes(naclSig)
+ 	if err != nil {
+ 		return
+ 	}
+@@ -469,8 +469,8 @@ func (k NaclDHKeyPair) VerifyString(ctx VerifyContext, sig string, msg []byte) (
+ 	return
+ }
+ 
+-func (s *NaclSigInfo) GetTagAndVersion() (PacketTag, PacketVersion) {
+-	return TagSignature, KeybasePacketV1
++func (s *NaclSigInfo) GetTagAndVersion() (kbcrypto.PacketTag, kbcrypto.PacketVersion) {
++	return kbcrypto.TagSignature, kbcrypto.KeybasePacketV1
+ }
+ 
+ func KIDToNaclSigningKeyPublic(bk []byte) *NaclSigningKeyPublic {
+@@ -518,7 +518,7 @@ func (s NaclSigInfo) Verify() (*NaclSigningKeyPublic, error) {
+ }
+ 
+ func (s *NaclSigInfo) ArmoredEncode() (ret string, err error) {
+-	return EncodePacketToArmoredString(s)
++	return kbcrypto.EncodePacketToArmoredString(s)
+ }
+ 
+ func (k NaclSigningKeyPair) ExportPublicAndPrivate() (RawPublicKey, RawPrivateKey, error) {
+@@ -738,7 +738,7 @@ func (k NaclDHKeyPair) EncryptToString(plaintext []byte, sender GenericKey) (str
+ 		return "", err
+ 	}
+ 
+-	return EncodePacketToArmoredString(info)
++	return kbcrypto.EncodePacketToArmoredString(info)
+ }
+ 
+ func (k NaclDHKeyPair) SecretSymmetricKey(reason EncryptionReason) (NaclSecretBoxKey, error) {
+@@ -820,8 +820,8 @@ func DeriveFromSecret(inKey [32]byte, reason DeriveReason) (outKey [32]byte, err
+ 	return outKey, nil
+ }
+ 
+-func (k *NaclEncryptionInfo) GetTagAndVersion() (PacketTag, PacketVersion) {
+-	return TagEncryption, KeybasePacketV1
++func (k *NaclEncryptionInfo) GetTagAndVersion() (kbcrypto.PacketTag, kbcrypto.PacketVersion) {
++	return kbcrypto.TagEncryption, kbcrypto.KeybasePacketV1
+ }
+ 
+ // DecryptFromString decrypts the output of EncryptToString above,
+diff --git a/go/libkb/per_user_key.go b/go/libkb/per_user_key.go
+index 7ef1255e547..07263114b3d 100644
+--- a/go/libkb/per_user_key.go
++++ b/go/libkb/per_user_key.go
+@@ -9,6 +9,7 @@ import (
+ 	"strings"
+ 	"sync"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/go-codec/codec"
+ 	"golang.org/x/crypto/nacl/secretbox"
+@@ -66,7 +67,7 @@ func NewPerUserKeyBox(contents PerUserKeySeed, receiverKey NaclDHKeyPair, sender
+ 	if err != nil {
+ 		return keybase1.PerUserKeyBox{}, err
+ 	}
+-	boxStr, err := EncodePacketToArmoredString(encInfo)
++	boxStr, err := kbcrypto.EncodePacketToArmoredString(encInfo)
+ 	if err != nil {
+ 		return keybase1.PerUserKeyBox{}, err
+ 	}
+diff --git a/go/libkb/skb.go b/go/libkb/skb.go
+index 671226f0cbc..89650408e98 100644
+--- a/go/libkb/skb.go
++++ b/go/libkb/skb.go
+@@ -132,8 +132,8 @@ func (s *SKB) newLKSec(pps *PassphraseStream) *LKSec {
+ 	return NewLKSec(pps, s.uid)
+ }
+ 
+-func (s *SKB) GetTagAndVersion() (PacketTag, PacketVersion) {
+-	return TagP3skb, KeybasePacketV1
++func (s *SKB) GetTagAndVersion() (kbcrypto.PacketTag, kbcrypto.PacketVersion) {
++	return kbcrypto.TagP3skb, kbcrypto.KeybasePacketV1
+ }
+ 
+ func (s *SKB) ReadKey() (g GenericKey, err error) {
+@@ -376,7 +376,7 @@ func (s *SKB) SetUID(uid keybase1.UID) {
+ }
+ 
+ func (s *SKB) ArmoredEncode() (ret string, err error) {
+-	return EncodePacketToArmoredString(s)
++	return kbcrypto.EncodePacketToArmoredString(s)
+ }
+ 
+ func (s *SKB) UnlockWithStoredSecret(m MetaContext, secretRetriever SecretRetriever) (ret GenericKey, err error) {
+diff --git a/go/libkb/skb_keyring.go b/go/libkb/skb_keyring.go
+index 3eaf0a1b49a..d2512aa5032 100644
+--- a/go/libkb/skb_keyring.go
++++ b/go/libkb/skb_keyring.go
+@@ -8,6 +8,7 @@ import (
+ 	"sync"
+ 	"time"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/go-codec/codec"
+ )
+@@ -75,7 +76,7 @@ func (s *skbPacket) CodecEncodeSelf(e *codec.Encoder) {
+ 
+ func (s *skbPacket) CodecDecodeSelf(d *codec.Decoder) {
+ 	var skb SKB
+-	err := DecodePacket(d, &skb)
++	err := kbcrypto.DecodePacket(d, &skb)
+ 	if err != nil {
+ 		// Okay to panic here, since the decoder catches
+ 		// panics and turns them back into errors.
+@@ -85,7 +86,7 @@ func (s *skbPacket) CodecDecodeSelf(d *codec.Decoder) {
+ }
+ 
+ func decodeSKBPacketList(r io.Reader, g *GlobalContext) ([]*SKB, error) {
+-	ch := codecHandle()
++	ch := kbcrypto.CodecHandle()
+ 	decoder := codec.NewDecoder(r, ch)
+ 
+ 	var packets []skbPacket
+@@ -372,7 +373,7 @@ func (k *SKBKeyringFile) WriteTo(w io.Writer) (n int64, err error) {
+ 	}()
+ 
+ 	for i, b := range k.Blocks {
+-		err = EncodePacket(b, b64)
++		err = kbcrypto.EncodePacket(b, b64)
+ 		if err != nil {
+ 			k.G().Log.Warning("Encoding problem for packet %d: %s", i, err)
+ 			return 0, err
+diff --git a/go/libkb/util.go b/go/libkb/util.go
+index f9561e2e9ab..740444d8b8c 100644
+--- a/go/libkb/util.go
++++ b/go/libkb/util.go
+@@ -6,7 +6,6 @@ package libkb
+ import (
+ 	"bufio"
+ 	"bytes"
+-	"crypto/hmac"
+ 	"crypto/rand"
+ 	"crypto/sha256"
+ 	"encoding/base32"
+@@ -28,6 +27,7 @@ import (
+ 	"time"
+ 	"unicode"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/logger"
+ 	"github.com/keybase/client/go/profiling"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+@@ -88,11 +88,11 @@ func MakeParentDirs(log SkinnyLogger, filename string) error {
+ }
+ 
+ func FastByteArrayEq(a, b []byte) bool {
+-	return bytes.Equal(a, b)
++	return kbcrypto.FastByteArrayEq(a, b)
+ }
+ 
+ func SecureByteArrayEq(a, b []byte) bool {
+-	return hmac.Equal(a, b)
++	return kbcrypto.SecureByteArrayEq(a, b)
+ }
+ 
+ func FormatTime(tm time.Time) string {
+
+From 22ade415dc90063661e8d44b7c92eb4fb00533a8 Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Thu, 30 Aug 2018 00:14:47 -0700
+Subject: [PATCH 07/12] Move signingkeypublic out
+
+---
+ go/engine/crypto_test.go        |  5 +--
+ go/engine/device_keygen.go      |  5 +--
+ go/engine/revoke_test.go        |  9 +++---
+ go/engine/secretkeys_test.go    |  6 ++--
+ go/kbcrypto/nacl_signing_key.go | 40 ++++++++++++++++++++++++
+ go/libkb/constants.go           |  5 ---
+ go/libkb/naclwrap.go            | 54 ++++++++++-----------------------
+ go/libkb/naclwrap_test.go       |  2 +-
+ go/libkb/pgp_key.go             |  4 +--
+ go/libkb/saltpack.go            |  2 +-
+ go/libkb/saltpack_sign.go       |  4 +--
+ go/libkb/saltpack_verify.go     |  3 +-
+ go/teams/seitan_v2.go           |  9 +++---
+ 13 files changed, 84 insertions(+), 64 deletions(-)
+ create mode 100644 go/kbcrypto/nacl_signing_key.go
+
+diff --git a/go/engine/crypto_test.go b/go/engine/crypto_test.go
+index bcace4534da..8de01ad2c93 100644
+--- a/go/engine/crypto_test.go
++++ b/go/engine/crypto_test.go
+@@ -12,6 +12,7 @@ import (
+ 	"golang.org/x/crypto/nacl/box"
+ 	"golang.org/x/net/context"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -39,8 +40,8 @@ func TestCryptoSignED25519(t *testing.T) {
+ 		t.Fatal(err)
+ 	}
+ 
+-	publicKey := libkb.NaclSigningKeyPublic(ret.PublicKey)
+-	if !publicKey.Verify(msg, (*libkb.NaclSignature)(&ret.Sig)) {
++	publicKey := kbcrypto.NaclSigningKeyPublic(ret.PublicKey)
++	if !publicKey.Verify(msg, (*kbcrypto.NaclSignature)(&ret.Sig)) {
+ 		t.Error(libkb.VerificationError{})
+ 	}
+ }
+diff --git a/go/engine/device_keygen.go b/go/engine/device_keygen.go
+index 4ccb719fea8..dc006a2d49f 100644
+--- a/go/engine/device_keygen.go
++++ b/go/engine/device_keygen.go
+@@ -7,6 +7,7 @@ import (
+ 	"errors"
+ 	"fmt"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -104,10 +105,10 @@ func (e *DeviceKeygen) Run(m libkb.MetaContext) (err error) {
+ 	return e.runErr
+ }
+ 
+-func (e *DeviceKeygen) SigningKeyPublic() (libkb.NaclSigningKeyPublic, error) {
++func (e *DeviceKeygen) SigningKeyPublic() (kbcrypto.NaclSigningKeyPublic, error) {
+ 	s, ok := e.naclSignGen.GetKeyPair().(libkb.NaclSigningKeyPair)
+ 	if !ok {
+-		return libkb.NaclSigningKeyPublic{}, libkb.BadKeyError{Msg: fmt.Sprintf("invalid key type %T", e.naclSignGen.GetKeyPair())}
++		return kbcrypto.NaclSigningKeyPublic{}, libkb.BadKeyError{Msg: fmt.Sprintf("invalid key type %T", e.naclSignGen.GetKeyPair())}
+ 	}
+ 	return s.Public, nil
+ 
+diff --git a/go/engine/revoke_test.go b/go/engine/revoke_test.go
+index 37f3a4de0a8..ed6290f4ae8 100644
+--- a/go/engine/revoke_test.go
++++ b/go/engine/revoke_test.go
+@@ -7,6 +7,7 @@ import (
+ 	"fmt"
+ 	"testing"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/stretchr/testify/require"
+@@ -362,8 +363,8 @@ func TestSignAfterRevoke(t *testing.T) {
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+-	publicKey := libkb.NaclSigningKeyPublic(ret.PublicKey)
+-	if !publicKey.Verify(msg, (*libkb.NaclSignature)(&ret.Sig)) {
++	publicKey := kbcrypto.NaclSigningKeyPublic(ret.PublicKey)
++	if !publicKey.Verify(msg, (*kbcrypto.NaclSignature)(&ret.Sig)) {
+ 		t.Error(libkb.VerificationError{})
+ 	}
+ 
+@@ -412,8 +413,8 @@ func TestLogoutAndDeprovisionIfRevokedNoop(t *testing.T) {
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+-	publicKey := libkb.NaclSigningKeyPublic(ret.PublicKey)
+-	if !publicKey.Verify(msg, (*libkb.NaclSignature)(&ret.Sig)) {
++	publicKey := kbcrypto.NaclSigningKeyPublic(ret.PublicKey)
++	if !publicKey.Verify(msg, (*kbcrypto.NaclSignature)(&ret.Sig)) {
+ 		t.Error(libkb.VerificationError{})
+ 	}
+ }
+diff --git a/go/engine/secretkeys_test.go b/go/engine/secretkeys_test.go
+index 31e0db73c9a..e1c7ba0879f 100644
+--- a/go/engine/secretkeys_test.go
++++ b/go/engine/secretkeys_test.go
+@@ -4,8 +4,10 @@
+ package engine
+ 
+ import (
+-	"github.com/keybase/client/go/libkb"
+ 	"testing"
++
++	"github.com/keybase/client/go/kbcrypto"
++	"github.com/keybase/client/go/libkb"
+ )
+ 
+ func TestSecretKeys(t *testing.T) {
+@@ -34,7 +36,7 @@ func TestSecretKeys(t *testing.T) {
+ 
+ 	// Build the signing keypair. To do this, we exploit the fact that a NaCl
+ 	// public signing key is the last 32 bytes of the private signing key.
+-	var public libkb.NaclSigningKeyPublic
++	var public kbcrypto.NaclSigningKeyPublic
+ 	copy(public[:], signing[32:])
+ 	pair := libkb.NaclSigningKeyPair{
+ 		Public: public,
+diff --git a/go/kbcrypto/nacl_signing_key.go b/go/kbcrypto/nacl_signing_key.go
+new file mode 100644
+index 00000000000..a01def372e3
+--- /dev/null
++++ b/go/kbcrypto/nacl_signing_key.go
+@@ -0,0 +1,40 @@
++// Copyright 2018 Keybase, Inc. All rights reserved. Use of
++// this source code is governed by the included BSD license.
++
++package kbcrypto
++
++import (
++	keybase1 "github.com/keybase/client/go/protocol/keybase1"
++	"github.com/keybase/go-crypto/ed25519"
++)
++
++type NaclSignature [ed25519.SignatureSize]byte
++
++type NaclSigningKeyPublic [ed25519.PublicKeySize]byte
++
++func (k NaclSigningKeyPublic) Verify(msg []byte, sig *NaclSignature) bool {
++	return ed25519.Verify(k[:], msg, sig[:])
++}
++
++const (
++	KeybaseKIDV1 = 1 // Uses SHA-256
++)
++
++const (
++	IDSuffixKID = 0x0a
++)
++
++func (k NaclSigningKeyPublic) GetBinaryKID() keybase1.BinaryKID {
++	prefix := []byte{
++		byte(KeybaseKIDV1),
++		byte(KIDNaclEddsa),
++	}
++	suffix := byte(IDSuffixKID)
++	out := append(prefix, k[:]...)
++	out = append(out, suffix)
++	return keybase1.BinaryKID(out)
++}
++
++func (k NaclSigningKeyPublic) GetKID() keybase1.KID {
++	return k.GetBinaryKID().ToKID()
++}
+diff --git a/go/libkb/constants.go b/go/libkb/constants.go
+index 2b8938e2660..e9a0b019bf5 100644
+--- a/go/libkb/constants.go
++++ b/go/libkb/constants.go
+@@ -167,7 +167,6 @@ const (
+ )
+ 
+ const (
+-	KeybaseKIDV1     = 1 // Uses SHA-256
+ 	OneYearInSeconds = 24 * 60 * 60 * 365
+ 
+ 	SigExpireIn            = OneYearInSeconds * 16 // 16 years
+@@ -306,10 +305,6 @@ const (
+ 	SCEphemeralPairwiseMACsMissingUIDs = int(keybase1.StatusCode_SCEphemeralPairwiseMACsMissingUIDs)
+ )
+ 
+-const (
+-	IDSuffixKID = 0x0a
+-)
+-
+ const (
+ 	MerkleTreeNode = 1
+ 	MerkleTreeLeaf = 2
+diff --git a/go/libkb/naclwrap.go b/go/libkb/naclwrap.go
+index 43966a848a9..ebb90100b27 100644
+--- a/go/libkb/naclwrap.go
++++ b/go/libkb/naclwrap.go
+@@ -18,12 +18,10 @@ import (
+ 	"golang.org/x/crypto/nacl/box"
+ )
+ 
+-type NaclSignature [ed25519.SignatureSize]byte
+-
+ type NaclSigInfo struct {
+ 	Kid      keybase1.BinaryKID       `codec:"key"`
+ 	Payload  []byte                   `codec:"payload,omitempty"`
+-	Sig      NaclSignature            `codec:"sig"`
++	Sig      kbcrypto.NaclSignature   `codec:"sig"`
+ 	SigType  kbcrypto.AlgoType        `codec:"sig_type"`
+ 	HashType int                      `codec:"hash_type"`
+ 	Detached bool                     `codec:"detached"`
+@@ -52,21 +50,16 @@ const NaclDHNonceSize = 24
+ 
+ const NaclSecretBoxKeySize = 32
+ 
+-type NaclSigningKeyPublic [ed25519.PublicKeySize]byte
+ type NaclSigningKeyPrivate [ed25519.PrivateKeySize]byte
+ 
+-func (k NaclSigningKeyPrivate) Sign(msg []byte) *NaclSignature {
+-	var sig NaclSignature
++func (k NaclSigningKeyPrivate) Sign(msg []byte) *kbcrypto.NaclSignature {
++	var sig kbcrypto.NaclSignature
+ 	copy(sig[:], ed25519.Sign(k[:], msg))
+ 	return &sig
+ }
+ 
+-func (k NaclSigningKeyPublic) Verify(msg []byte, sig *NaclSignature) bool {
+-	return ed25519.Verify(k[:], msg, sig[:])
+-}
+-
+ type NaclSigningKeyPair struct {
+-	Public  NaclSigningKeyPublic
++	Public  kbcrypto.NaclSigningKeyPublic
+ 	Private *NaclSigningKeyPrivate
+ }
+ 
+@@ -110,7 +103,7 @@ func importNaclKid(bkid []byte, typ byte, bodyLen int) (ret []byte, err error) {
+ 		return
+ 	}
+ 
+-	if bkid[0] != byte(KeybaseKIDV1) || bkid[l-1] != byte(IDSuffixKID) || bkid[1] != typ {
++	if bkid[0] != byte(kbcrypto.KeybaseKIDV1) || bkid[l-1] != byte(kbcrypto.IDSuffixKID) || bkid[1] != typ {
+ 		err = BadKeyError{"bad header or trailer bytes"}
+ 		return
+ 	}
+@@ -141,7 +134,7 @@ func ImportKeypairFromKID(k keybase1.KID) (key GenericKey, err error) {
+ 		err = BadKeyError{"KID was way too short"}
+ 		return
+ 	}
+-	if kid[0] != byte(KeybaseKIDV1) || kid[l-1] != byte(IDSuffixKID) {
++	if kid[0] != byte(kbcrypto.KeybaseKIDV1) || kid[l-1] != byte(kbcrypto.IDSuffixKID) {
+ 		err = BadKeyError{"bad header or trailer found"}
+ 		return
+ 	}
+@@ -221,10 +214,10 @@ func (k NaclDHKeyPublic) GetKID() keybase1.KID {
+ 
+ func (k NaclDHKeyPublic) GetBinaryKID() keybase1.BinaryKID {
+ 	prefix := []byte{
+-		byte(KeybaseKIDV1),
++		byte(kbcrypto.KeybaseKIDV1),
+ 		byte(kbcrypto.KIDNaclDH),
+ 	}
+-	suffix := byte(IDSuffixKID)
++	suffix := byte(kbcrypto.IDSuffixKID)
+ 	out := append(prefix, k[:]...)
+ 	out = append(out, suffix)
+ 	return keybase1.BinaryKID(out)
+@@ -242,21 +235,6 @@ func (k NaclSigningKeyPair) GetAlgoType() kbcrypto.AlgoType {
+ 	return kbcrypto.KIDNaclEddsa
+ }
+ 
+-func (k NaclSigningKeyPublic) GetBinaryKID() keybase1.BinaryKID {
+-	prefix := []byte{
+-		byte(KeybaseKIDV1),
+-		byte(kbcrypto.KIDNaclEddsa),
+-	}
+-	suffix := byte(IDSuffixKID)
+-	out := append(prefix, k[:]...)
+-	out = append(out, suffix)
+-	return keybase1.BinaryKID(out)
+-}
+-
+-func (k NaclSigningKeyPublic) GetKID() keybase1.KID {
+-	return k.GetBinaryKID().ToKID()
+-}
+-
+ func (k NaclSigningKeyPair) GetKID() (ret keybase1.KID) {
+ 	return k.Public.GetKID()
+ }
+@@ -431,7 +409,7 @@ func NaclVerifyAndExtract(s string) (kid keybase1.KID, payload []byte, fullBody
+ 		return "", nil, nil, err
+ 	}
+ 
+-	var nk *NaclSigningKeyPublic
++	var nk *kbcrypto.NaclSigningKeyPublic
+ 	nk, err = naclSig.Verify()
+ 	if err != nil {
+ 		return "", nil, nil, err
+@@ -473,14 +451,14 @@ func (s *NaclSigInfo) GetTagAndVersion() (kbcrypto.PacketTag, kbcrypto.PacketVer
+ 	return kbcrypto.TagSignature, kbcrypto.KeybasePacketV1
+ }
+ 
+-func KIDToNaclSigningKeyPublic(bk []byte) *NaclSigningKeyPublic {
++func KIDToNaclSigningKeyPublic(bk []byte) *kbcrypto.NaclSigningKeyPublic {
+ 	if len(bk) != 3+ed25519.PublicKeySize {
+ 		return nil
+ 	}
+-	if bk[0] != byte(KeybaseKIDV1) || bk[1] != byte(kbcrypto.KIDNaclEddsa) || bk[len(bk)-1] != byte(IDSuffixKID) {
++	if bk[0] != byte(kbcrypto.KeybaseKIDV1) || bk[1] != byte(kbcrypto.KIDNaclEddsa) || bk[len(bk)-1] != byte(kbcrypto.IDSuffixKID) {
+ 		return nil
+ 	}
+-	var ret NaclSigningKeyPublic
++	var ret kbcrypto.NaclSigningKeyPublic
+ 	copy(ret[:], bk[2:len(bk)-1])
+ 	return &ret
+ }
+@@ -489,13 +467,13 @@ func EncryptionKIDToPublicKeyBytes(bk []byte) ([]byte, error) {
+ 	if len(bk) != 3+NaclDHKeysize {
+ 		return []byte{}, fmt.Errorf("invalid DH encryption key kbcrypto.KID (wrong length)")
+ 	}
+-	if bk[0] != byte(KeybaseKIDV1) || bk[1] != byte(kbcrypto.KIDNaclDH) || bk[len(bk)-1] != byte(IDSuffixKID) {
++	if bk[0] != byte(kbcrypto.KeybaseKIDV1) || bk[1] != byte(kbcrypto.KIDNaclDH) || bk[len(bk)-1] != byte(kbcrypto.IDSuffixKID) {
+ 		return []byte{}, fmt.Errorf("invalid DH encryption key kbcrypto.KID (wrong type)")
+ 	}
+ 	return bk[2 : len(bk)-1], nil
+ }
+ 
+-func (s NaclSigInfo) Verify() (*NaclSigningKeyPublic, error) {
++func (s NaclSigInfo) Verify() (*kbcrypto.NaclSigningKeyPublic, error) {
+ 	key := KIDToNaclSigningKeyPublic(s.Kid)
+ 	if key == nil {
+ 		return nil, BadKeyError{}
+@@ -535,7 +513,7 @@ func makeNaclSigningKeyPair(reader io.Reader) (NaclSigningKeyPair, error) {
+ 		return NaclSigningKeyPair{}, err
+ 	}
+ 
+-	var publicArray NaclSigningKeyPublic
++	var publicArray kbcrypto.NaclSigningKeyPublic
+ 	var privateArray NaclSigningKeyPrivate
+ 
+ 	copy(publicArray[:], publicKey)
+@@ -684,7 +662,7 @@ func (k NaclDHKeyPair) IsNil() bool {
+ }
+ 
+ func (k NaclSigningKeyPair) IsNil() bool {
+-	var empty NaclSigningKeyPublic
++	var empty kbcrypto.NaclSigningKeyPublic
+ 	return bytes.Equal(k.Public[:], empty[:])
+ }
+ 
+diff --git a/go/libkb/naclwrap_test.go b/go/libkb/naclwrap_test.go
+index 880969f4095..56f3ab73346 100644
+--- a/go/libkb/naclwrap_test.go
++++ b/go/libkb/naclwrap_test.go
+@@ -125,7 +125,7 @@ func TestVerifyBytesReject(t *testing.T) {
+ 
+ 	// Corrupt signature.
+ 
+-	var corruptSig NaclSignature
++	var corruptSig kbcrypto.NaclSignature
+ 	copy(corruptSig[:], sig[:])
+ 	corruptSig[0] = ^sig[0]
+ 	if keyPair.Public.Verify(msg, &corruptSig) {
+diff --git a/go/libkb/pgp_key.go b/go/libkb/pgp_key.go
+index 935391d22be..38e4a594ba9 100644
+--- a/go/libkb/pgp_key.go
++++ b/go/libkb/pgp_key.go
+@@ -600,7 +600,7 @@ func (k *PGPKeyBundle) CanSign() bool {
+ func (k *PGPKeyBundle) GetBinaryKID() keybase1.BinaryKID {
+ 
+ 	prefix := []byte{
+-		byte(KeybaseKIDV1),
++		byte(kbcrypto.KeybaseKIDV1),
+ 		byte(k.PrimaryKey.PubKeyAlgo),
+ 	}
+ 
+@@ -621,7 +621,7 @@ func (k *PGPKeyBundle) GetBinaryKID() keybase1.BinaryKID {
+ 	sum := sha256.Sum256(buf.Bytes()[hdrBytes:])
+ 
+ 	out := append(prefix, sum[:]...)
+-	out = append(out, byte(IDSuffixKID))
++	out = append(out, byte(kbcrypto.IDSuffixKID))
+ 
+ 	return keybase1.BinaryKID(out)
+ }
+diff --git a/go/libkb/saltpack.go b/go/libkb/saltpack.go
+index c5625226176..e640c2e2433 100644
+--- a/go/libkb/saltpack.go
++++ b/go/libkb/saltpack.go
+@@ -170,7 +170,7 @@ func (n naclKeyring) LookupSigningPublicKey(kid []byte) saltpack.SigningPublicKe
+ 	}
+ 	keyBytes := [ed25519.PublicKeySize]byte{}
+ 	copy(keyBytes[:], kid)
+-	return saltSignerPublic{NaclSigningKeyPublic(keyBytes)}
++	return saltSignerPublic{kbcrypto.NaclSigningKeyPublic(keyBytes)}
+ }
+ 
+ // An empty keyring just for generating ephemeral keys.
+diff --git a/go/libkb/saltpack_sign.go b/go/libkb/saltpack_sign.go
+index 8ae457c036e..9a8563c9d23 100644
+--- a/go/libkb/saltpack_sign.go
++++ b/go/libkb/saltpack_sign.go
+@@ -80,7 +80,7 @@ func (s saltSigner) Sign(msg []byte) ([]byte, error) {
+ }
+ 
+ type saltSignerPublic struct {
+-	key NaclSigningKeyPublic
++	key kbcrypto.NaclSigningKeyPublic
+ }
+ 
+ func (s saltSignerPublic) ToKID() []byte {
+@@ -92,7 +92,7 @@ func (s saltSignerPublic) Verify(msg, sig []byte) error {
+ 		return fmt.Errorf("signature size: %d, expected %d", len(sig), ed25519.SignatureSize)
+ 	}
+ 
+-	var fixed NaclSignature
++	var fixed kbcrypto.NaclSignature
+ 	copy(fixed[:], sig)
+ 	if !s.key.Verify(msg, &fixed) {
+ 		return BadSigError{E: "bad signature"}
+diff --git a/go/libkb/saltpack_verify.go b/go/libkb/saltpack_verify.go
+index a04ca285d1d..6ec7cebab0a 100644
+--- a/go/libkb/saltpack_verify.go
++++ b/go/libkb/saltpack_verify.go
+@@ -8,6 +8,7 @@ import (
+ 	"crypto/hmac"
+ 	"io"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/logger"
+ 	"github.com/keybase/saltpack"
+ )
+@@ -119,7 +120,7 @@ type echoKeyring struct {
+ }
+ 
+ func (e echoKeyring) LookupSigningPublicKey(kid []byte) saltpack.SigningPublicKey {
+-	var k NaclSigningKeyPublic
++	var k kbcrypto.NaclSigningKeyPublic
+ 	copy(k[:], kid)
+ 	return saltSignerPublic{key: k}
+ }
+diff --git a/go/teams/seitan_v2.go b/go/teams/seitan_v2.go
+index 36555968cce..46e46e36bed 100644
+--- a/go/teams/seitan_v2.go
++++ b/go/teams/seitan_v2.go
+@@ -11,6 +11,7 @@ import (
+ 	"crypto/sha512"
+ 	"encoding/base64"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/go-crypto/ed25519"
+ 	"golang.org/x/net/context"
+@@ -166,8 +167,8 @@ func (sikey SeitanSIKeyV2) GeneratePackedEncryptedKey(ctx context.Context, team
+ }
+ 
+ // "Signature"
+-type SeitanSig libkb.NaclSignature
+-type SeitanPubKey libkb.NaclSigningKeyPublic
++type SeitanSig kbcrypto.NaclSignature
++type SeitanPubKey kbcrypto.NaclSigningKeyPublic
+ 
+ func GenerateSeitanSignatureMessage(uid keybase1.UID, eldestSeqno keybase1.Seqno, inviteID SCTeamInviteID, time keybase1.Time) (payload []byte, err error) {
+ 	type SigPayload struct {
+@@ -191,8 +192,8 @@ func GenerateSeitanSignatureMessage(uid keybase1.UID, eldestSeqno keybase1.Seqno
+ }
+ 
+ func VerifySeitanSignatureMessage(pubKey SeitanPubKey, msg []byte, sig SeitanSig) error {
+-	naclsig := libkb.NaclSignature(sig)
+-	valid := libkb.NaclSigningKeyPublic(pubKey).Verify(msg, &naclsig)
++	naclsig := kbcrypto.NaclSignature(sig)
++	valid := kbcrypto.NaclSigningKeyPublic(pubKey).Verify(msg, &naclsig)
+ 	if !valid {
+ 		return libkb.KeyCannotVerifyError{}
+ 	}
+
+From c7c1bf51ab99f9ddcd94dfab1043c24518d082be Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Thu, 30 Aug 2018 00:15:48 -0700
+Subject: [PATCH 08/12] Move one more
+
+---
+ go/chat/boxer.go                |  2 +-
+ go/kbcrypto/nacl_signing_key.go | 12 ++++++++++++
+ go/libkb/naclwrap.go            | 14 +-------------
+ 3 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/go/chat/boxer.go b/go/chat/boxer.go
+index 4ace273ac2c..f96a3a5cd08 100644
+--- a/go/chat/boxer.go
++++ b/go/chat/boxer.go
+@@ -1754,7 +1754,7 @@ func (b *Boxer) signEncryptOpen(data chat1.SignEncryptedData, encryptionKey libk
+ 	verifyKID []byte, prefix kbcrypto.SignaturePrefix) ([]byte, error) {
+ 	var encKey [signencrypt.SecretboxKeySize]byte = encryptionKey
+ 
+-	verifyKey := libkb.KIDToNaclSigningKeyPublic(verifyKID)
++	verifyKey := kbcrypto.KIDToNaclSigningKeyPublic(verifyKID)
+ 	if verifyKey == nil {
+ 		return nil, libkb.BadKeyError{}
+ 	}
+diff --git a/go/kbcrypto/nacl_signing_key.go b/go/kbcrypto/nacl_signing_key.go
+index a01def372e3..230acdcf11e 100644
+--- a/go/kbcrypto/nacl_signing_key.go
++++ b/go/kbcrypto/nacl_signing_key.go
+@@ -38,3 +38,15 @@ func (k NaclSigningKeyPublic) GetBinaryKID() keybase1.BinaryKID {
+ func (k NaclSigningKeyPublic) GetKID() keybase1.KID {
+ 	return k.GetBinaryKID().ToKID()
+ }
++
++func KIDToNaclSigningKeyPublic(bk []byte) *NaclSigningKeyPublic {
++	if len(bk) != 3+ed25519.PublicKeySize {
++		return nil
++	}
++	if bk[0] != byte(KeybaseKIDV1) || bk[1] != byte(KIDNaclEddsa) || bk[len(bk)-1] != byte(IDSuffixKID) {
++		return nil
++	}
++	var ret NaclSigningKeyPublic
++	copy(ret[:], bk[2:len(bk)-1])
++	return &ret
++}
+diff --git a/go/libkb/naclwrap.go b/go/libkb/naclwrap.go
+index ebb90100b27..e7673ebc9ec 100644
+--- a/go/libkb/naclwrap.go
++++ b/go/libkb/naclwrap.go
+@@ -451,18 +451,6 @@ func (s *NaclSigInfo) GetTagAndVersion() (kbcrypto.PacketTag, kbcrypto.PacketVer
+ 	return kbcrypto.TagSignature, kbcrypto.KeybasePacketV1
+ }
+ 
+-func KIDToNaclSigningKeyPublic(bk []byte) *kbcrypto.NaclSigningKeyPublic {
+-	if len(bk) != 3+ed25519.PublicKeySize {
+-		return nil
+-	}
+-	if bk[0] != byte(kbcrypto.KeybaseKIDV1) || bk[1] != byte(kbcrypto.KIDNaclEddsa) || bk[len(bk)-1] != byte(kbcrypto.IDSuffixKID) {
+-		return nil
+-	}
+-	var ret kbcrypto.NaclSigningKeyPublic
+-	copy(ret[:], bk[2:len(bk)-1])
+-	return &ret
+-}
+-
+ func EncryptionKIDToPublicKeyBytes(bk []byte) ([]byte, error) {
+ 	if len(bk) != 3+NaclDHKeysize {
+ 		return []byte{}, fmt.Errorf("invalid DH encryption key kbcrypto.KID (wrong length)")
+@@ -474,7 +462,7 @@ func EncryptionKIDToPublicKeyBytes(bk []byte) ([]byte, error) {
+ }
+ 
+ func (s NaclSigInfo) Verify() (*kbcrypto.NaclSigningKeyPublic, error) {
+-	key := KIDToNaclSigningKeyPublic(s.Kid)
++	key := kbcrypto.KIDToNaclSigningKeyPublic(s.Kid)
+ 	if key == nil {
+ 		return nil, BadKeyError{}
+ 	}
+
+From 16e21d7d3130052ea2a3c329183a0f9d3f31d15a Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Thu, 30 Aug 2018 00:23:04 -0700
+Subject: [PATCH 09/12] Move out
+
+---
+ go/auth/token.go                |   3 +-
+ go/chat/boxer.go                |   4 +-
+ go/engine/crypto.go             |   2 +-
+ go/engine/crypto_test.go        |   4 +-
+ go/engine/device_keygen.go      |   2 +-
+ go/engine/kex2_provisionee.go   |   3 +-
+ go/engine/pgp_export_key.go     |   9 ++-
+ go/engine/revoke_test.go        |   4 +-
+ go/engine/saltpack_sign_test.go |   3 +-
+ go/ephemeral/device_ek.go       |   3 +-
+ go/ephemeral/team_ek.go         |   3 +-
+ go/ephemeral/user_ek.go         |   3 +-
+ go/kbcrypto/nacl_sig_info.go    | 139 ++++++++++++++++++++++++++++++++
+ go/libkb/errors.go              |  35 --------
+ go/libkb/kbpackets.go           |  19 -----
+ go/libkb/kbpackets_test.go      |   4 +-
+ go/libkb/keyfamily.go           |   7 +-
+ go/libkb/naclwrap.go            |  98 ++++------------------
+ go/libkb/naclwrap_test.go       |   6 +-
+ go/libkb/nist.go                |   2 +-
+ go/libkb/pgp_key.go             |   4 +-
+ go/libkb/rpc_exim.go            |  13 +--
+ go/libkb/saltpack_verify.go     |  18 ++---
+ go/libkb/skb.go                 |   8 +-
+ 24 files changed, 207 insertions(+), 189 deletions(-)
+ create mode 100644 go/kbcrypto/nacl_sig_info.go
+
+diff --git a/go/auth/token.go b/go/auth/token.go
+index da5607e15e2..4ca00428bed 100644
+--- a/go/auth/token.go
++++ b/go/auth/token.go
+@@ -14,6 +14,7 @@ import (
+ 	"math"
+ 	"time"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	libkb "github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -97,7 +98,7 @@ func (t Token) String() string {
+ 
+ func VerifyToken(signature, server, challenge string, maxExpireIn int) (*Token, error) {
+ 	var t *Token
+-	kid, token, _, err := libkb.NaclVerifyAndExtract(signature)
++	kid, token, _, err := kbcrypto.NaclVerifyAndExtract(signature)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/go/chat/boxer.go b/go/chat/boxer.go
+index f96a3a5cd08..6f837ff437c 100644
+--- a/go/chat/boxer.go
++++ b/go/chat/boxer.go
+@@ -1756,7 +1756,7 @@ func (b *Boxer) signEncryptOpen(data chat1.SignEncryptedData, encryptionKey libk
+ 
+ 	verifyKey := kbcrypto.KIDToNaclSigningKeyPublic(verifyKID)
+ 	if verifyKey == nil {
+-		return nil, libkb.BadKeyError{}
++		return nil, kbcrypto.BadKeyError{}
+ 	}
+ 	var verKey [ed25519.PublicKeySize]byte = *verifyKey
+ 
+@@ -1839,7 +1839,7 @@ func (b *Boxer) verifyMessageHeaderV1(ctx context.Context, header chat1.HeaderPl
+ 
+ // verify verifies the signature of data using SignatureInfo.
+ func (b *Boxer) verify(data []byte, si chat1.SignatureInfo, prefix kbcrypto.SignaturePrefix) bool {
+-	sigInfo := libkb.NaclSigInfo{
++	sigInfo := kbcrypto.NaclSigInfo{
+ 		Version: si.V,
+ 		Prefix:  prefix,
+ 		Kid:     si.K,
+diff --git a/go/engine/crypto.go b/go/engine/crypto.go
+index 89149cea4d0..66701557f20 100644
+--- a/go/engine/crypto.go
++++ b/go/engine/crypto.go
+@@ -75,7 +75,7 @@ func SignED25519ForKBFS(ctx context.Context, g *libkb.GlobalContext, getSecretUI
+ 		return
+ 	}
+ 
+-	var sigInfo *libkb.NaclSigInfo
++	var sigInfo *kbcrypto.NaclSigInfo
+ 	sigInfo, err = kp.SignV2(arg.Msg, kbcrypto.SignaturePrefixKBFS)
+ 	if err != nil {
+ 		return
+diff --git a/go/engine/crypto_test.go b/go/engine/crypto_test.go
+index 8de01ad2c93..0deaa1e0139 100644
+--- a/go/engine/crypto_test.go
++++ b/go/engine/crypto_test.go
+@@ -42,7 +42,7 @@ func TestCryptoSignED25519(t *testing.T) {
+ 
+ 	publicKey := kbcrypto.NaclSigningKeyPublic(ret.PublicKey)
+ 	if !publicKey.Verify(msg, (*kbcrypto.NaclSignature)(&ret.Sig)) {
+-		t.Error(libkb.VerificationError{})
++		t.Error(kbcrypto.VerificationError{})
+ 	}
+ }
+ 
+@@ -65,7 +65,7 @@ func TestCryptoSignToString(t *testing.T) {
+ 		t.Fatal(err)
+ 	}
+ 
+-	_, msg2, _, err := libkb.NaclVerifyAndExtract(signature)
++	_, msg2, _, err := kbcrypto.NaclVerifyAndExtract(signature)
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+diff --git a/go/engine/device_keygen.go b/go/engine/device_keygen.go
+index dc006a2d49f..71771eea213 100644
+--- a/go/engine/device_keygen.go
++++ b/go/engine/device_keygen.go
+@@ -108,7 +108,7 @@ func (e *DeviceKeygen) Run(m libkb.MetaContext) (err error) {
+ func (e *DeviceKeygen) SigningKeyPublic() (kbcrypto.NaclSigningKeyPublic, error) {
+ 	s, ok := e.naclSignGen.GetKeyPair().(libkb.NaclSigningKeyPair)
+ 	if !ok {
+-		return kbcrypto.NaclSigningKeyPublic{}, libkb.BadKeyError{Msg: fmt.Sprintf("invalid key type %T", e.naclSignGen.GetKeyPair())}
++		return kbcrypto.NaclSigningKeyPublic{}, kbcrypto.BadKeyError{Msg: fmt.Sprintf("invalid key type %T", e.naclSignGen.GetKeyPair())}
+ 	}
+ 	return s.Public, nil
+ 
+diff --git a/go/engine/kex2_provisionee.go b/go/engine/kex2_provisionee.go
+index 863682958fe..561c388e960 100644
+--- a/go/engine/kex2_provisionee.go
++++ b/go/engine/kex2_provisionee.go
+@@ -10,6 +10,7 @@ import (
+ 	"net/url"
+ 	"time"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/kex2"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/client/go/logger"
+@@ -362,7 +363,7 @@ func (e *Kex2Provisionee) decodeSig(sig []byte) (*decodedSig, error) {
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	naclSig, err := libkb.DecodeNaclSigInfoPacket(body)
++	naclSig, err := kbcrypto.DecodeNaclSigInfoPacket(body)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/go/engine/pgp_export_key.go b/go/engine/pgp_export_key.go
+index c7db933a7f2..d8b69b43653 100644
+--- a/go/engine/pgp_export_key.go
++++ b/go/engine/pgp_export_key.go
+@@ -13,6 +13,7 @@ import (
+ 	"errors"
+ 	"fmt"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -146,7 +147,7 @@ func (e *PGPKeyExportEngine) exportSecret(m libkb.MetaContext) error {
+ 	}
+ 	fp := libkb.GetPGPFingerprintFromGenericKey(key)
+ 	if fp == nil {
+-		return libkb.BadKeyError{Msg: "no fingerprint found"}
++		return kbcrypto.BadKeyError{Msg: "no fingerprint found"}
+ 	}
+ 
+ 	if !e.queryMatch(key) {
+@@ -154,12 +155,12 @@ func (e *PGPKeyExportEngine) exportSecret(m libkb.MetaContext) error {
+ 	}
+ 
+ 	if _, ok := key.(*libkb.PGPKeyBundle); !ok {
+-		return libkb.BadKeyError{Msg: "Expected a PGP key"}
++		return kbcrypto.BadKeyError{Msg: "Expected a PGP key"}
+ 	}
+ 
+ 	raw := skb.RawUnlockedKey()
+ 	if raw == nil {
+-		return libkb.BadKeyError{Msg: "can't get raw representation of key"}
++		return kbcrypto.BadKeyError{Msg: "can't get raw representation of key"}
+ 	}
+ 
+ 	if e.encrypted {
+@@ -203,7 +204,7 @@ func (e *PGPKeyExportEngine) encryptKey(m libkb.MetaContext, raw []byte) ([]byte
+ 	}
+ 
+ 	if entity.PrivateKey == nil {
+-		return nil, libkb.BadKeyError{Msg: "No secret part in PGP key."}
++		return nil, kbcrypto.BadKeyError{Msg: "No secret part in PGP key."}
+ 	}
+ 
+ 	desc := "Enter passphrase to protect your PGP key. Secure passphrases have at least 8 characters."
+diff --git a/go/engine/revoke_test.go b/go/engine/revoke_test.go
+index ed6290f4ae8..67c9d2bc3f7 100644
+--- a/go/engine/revoke_test.go
++++ b/go/engine/revoke_test.go
+@@ -365,7 +365,7 @@ func TestSignAfterRevoke(t *testing.T) {
+ 	}
+ 	publicKey := kbcrypto.NaclSigningKeyPublic(ret.PublicKey)
+ 	if !publicKey.Verify(msg, (*kbcrypto.NaclSignature)(&ret.Sig)) {
+-		t.Error(libkb.VerificationError{})
++		t.Error(kbcrypto.VerificationError{})
+ 	}
+ 
+ 	// This should log out tc1:
+@@ -415,7 +415,7 @@ func TestLogoutAndDeprovisionIfRevokedNoop(t *testing.T) {
+ 	}
+ 	publicKey := kbcrypto.NaclSigningKeyPublic(ret.PublicKey)
+ 	if !publicKey.Verify(msg, (*kbcrypto.NaclSignature)(&ret.Sig)) {
+-		t.Error(libkb.VerificationError{})
++		t.Error(kbcrypto.VerificationError{})
+ 	}
+ }
+ 
+diff --git a/go/engine/saltpack_sign_test.go b/go/engine/saltpack_sign_test.go
+index 2b3500a1457..db499d2499f 100644
+--- a/go/engine/saltpack_sign_test.go
++++ b/go/engine/saltpack_sign_test.go
+@@ -9,6 +9,7 @@ import (
+ 	"strings"
+ 	"testing"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/go-codec/codec"
+@@ -395,7 +396,7 @@ func TestSaltpackVerifyRevoked(t *testing.T) {
+ 	if err == nil {
+ 		t.Fatal("expected error during verify")
+ 	}
+-	verificationError, ok := err.(libkb.VerificationError)
++	verificationError, ok := err.(kbcrypto.VerificationError)
+ 	if !ok {
+ 		t.Fatal("expected VerificationError during verify")
+ 	}
+diff --git a/go/ephemeral/device_ek.go b/go/ephemeral/device_ek.go
+index a779a34f376..ff141e8b670 100644
+--- a/go/ephemeral/device_ek.go
++++ b/go/ephemeral/device_ek.go
+@@ -5,6 +5,7 @@ import (
+ 	"encoding/json"
+ 	"fmt"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -204,7 +205,7 @@ func allDeviceEKMetadataMaybeStale(ctx context.Context, g *libkb.GlobalContext,
+ 	metadata = map[keybase1.DeviceID]keybase1.DeviceEkMetadata{}
+ 	for _, sig := range parsedResponse.Sigs {
+ 		// Verify the sig.
+-		signerKID, payload, _, err := libkb.NaclVerifyAndExtract(sig)
++		signerKID, payload, _, err := kbcrypto.NaclVerifyAndExtract(sig)
+ 		if err != nil {
+ 			return nil, err
+ 		}
+diff --git a/go/ephemeral/team_ek.go b/go/ephemeral/team_ek.go
+index 2feec62a849..9a03f5f29aa 100644
+--- a/go/ephemeral/team_ek.go
++++ b/go/ephemeral/team_ek.go
+@@ -5,6 +5,7 @@ import (
+ 	"encoding/json"
+ 	"fmt"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/client/go/protocol/keybase1"
+ 	"github.com/keybase/client/go/teams"
+@@ -289,7 +290,7 @@ func fetchTeamEKStatement(ctx context.Context, g *libkb.GlobalContext, teamID ke
+ }
+ 
+ func extractTeamEKStatementFromSig(sig string) (signerKID keybase1.KID, statement *keybase1.TeamEkStatement, err error) {
+-	signerKID, payload, _, err := libkb.NaclVerifyAndExtract(sig)
++	signerKID, payload, _, err := kbcrypto.NaclVerifyAndExtract(sig)
+ 	if err != nil {
+ 		return signerKID, nil, err
+ 	}
+diff --git a/go/ephemeral/user_ek.go b/go/ephemeral/user_ek.go
+index cc7af2b0d30..8a53b4b17e4 100644
+--- a/go/ephemeral/user_ek.go
++++ b/go/ephemeral/user_ek.go
+@@ -5,6 +5,7 @@ import (
+ 	"encoding/json"
+ 	"fmt"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/libkb"
+ 	"github.com/keybase/client/go/protocol/keybase1"
+ )
+@@ -293,7 +294,7 @@ func fetchUserEKStatement(ctx context.Context, g *libkb.GlobalContext, uid keyba
+ }
+ 
+ func extractUserEKStatementFromSig(sig string) (signerKID keybase1.KID, statement *keybase1.UserEkStatement, err error) {
+-	signerKID, payload, _, err := libkb.NaclVerifyAndExtract(sig)
++	signerKID, payload, _, err := kbcrypto.NaclVerifyAndExtract(sig)
+ 	if err != nil {
+ 		return signerKID, nil, err
+ 	}
+diff --git a/go/kbcrypto/nacl_sig_info.go b/go/kbcrypto/nacl_sig_info.go
+new file mode 100644
+index 00000000000..31e6c9e14d2
+--- /dev/null
++++ b/go/kbcrypto/nacl_sig_info.go
+@@ -0,0 +1,139 @@
++// Copyright 2018 Keybase, Inc. All rights reserved. Use of
++// this source code is governed by the included BSD license.
++
++package kbcrypto
++
++import (
++	"encoding/base64"
++	"fmt"
++
++	keybase1 "github.com/keybase/client/go/protocol/keybase1"
++)
++
++type NaclSigInfo struct {
++	Kid      keybase1.BinaryKID `codec:"key"`
++	Payload  []byte             `codec:"payload,omitempty"`
++	Sig      NaclSignature      `codec:"sig"`
++	SigType  AlgoType           `codec:"sig_type"`
++	HashType int                `codec:"hash_type"`
++	Detached bool               `codec:"detached"`
++	Version  int                `codec:"version,omitempty"`
++	Prefix   SignaturePrefix    `codec:"prefix,omitempty"`
++}
++
++func (s *NaclSigInfo) GetTagAndVersion() (PacketTag, PacketVersion) {
++	return TagSignature, KeybasePacketV1
++}
++
++type BadKeyError struct {
++	Msg string
++}
++
++func (p BadKeyError) Error() string {
++	msg := "Bad key found"
++	if len(p.Msg) != 0 {
++		msg = msg + ": " + p.Msg
++	}
++	return msg
++}
++
++type VerificationError struct {
++	Cause error
++}
++
++const (
++	SCSigCannotVerify = int(keybase1.StatusCode_SCSigCannotVerify)
++)
++
++func (e VerificationError) Error() string {
++	if e.Cause == nil {
++		return "Verification failed"
++	}
++	return fmt.Sprintf("Verification failed: %v", e.Cause)
++}
++
++func (e VerificationError) ToStatus() keybase1.Status {
++	return keybase1.Status{
++		Code: SCSigCannotVerify,
++		Name: "SC_SIG_CANNOT_VERIFY",
++		Fields: []keybase1.StringKVPair{
++			{Key: "Cause", Value: e.Cause.Error()},
++		},
++	}
++}
++
++type UnhandledSignatureError struct {
++	version int
++}
++
++func (e UnhandledSignatureError) Error() string {
++	return fmt.Sprintf("unhandled signature version: %d", e.version)
++}
++
++func (s NaclSigInfo) Verify() (*NaclSigningKeyPublic, error) {
++	key := KIDToNaclSigningKeyPublic(s.Kid)
++	if key == nil {
++		return nil, BadKeyError{}
++	}
++
++	switch s.Version {
++	case 0, 1:
++		if !key.Verify(s.Payload, &s.Sig) {
++			return nil, VerificationError{}
++		}
++	case 2:
++		if !key.Verify(s.Prefix.Prefix(s.Payload), &s.Sig) {
++			return nil, VerificationError{}
++		}
++	default:
++		return nil, UnhandledSignatureError{}
++	}
++
++	return key, nil
++}
++
++func (s *NaclSigInfo) ArmoredEncode() (ret string, err error) {
++	return EncodePacketToArmoredString(s)
++}
++
++func DecodeNaclSigInfoPacket(data []byte) (NaclSigInfo, error) {
++	var info NaclSigInfo
++	err := DecodePacketFromBytes(data, &info)
++	if err != nil {
++		return NaclSigInfo{}, err
++	}
++	return info, nil
++}
++
++func DecodeArmoredNaclSigInfoPacket(s string) (NaclSigInfo, error) {
++	b, err := base64.StdEncoding.DecodeString(s)
++	if err != nil {
++		return NaclSigInfo{}, err
++	}
++	return DecodeNaclSigInfoPacket(b)
++}
++
++// NaclVerifyAndExtract interprets the given string as a NaCl-signed messaged, in
++// the keybase NaclSigInfo (v1) format. It will check that the signature verified, and if so,
++// will return the KID of the key that was used for the verification, the payload of the signature,
++// the full body of the decoded SignInfo, and an error
++func NaclVerifyAndExtract(s string) (kid keybase1.KID, payload []byte, fullBody []byte, err error) {
++	fullBody, err = base64.StdEncoding.DecodeString(s)
++	if err != nil {
++		return "", nil, nil, err
++	}
++
++	naclSig, err := DecodeNaclSigInfoPacket(fullBody)
++	if err != nil {
++		return "", nil, nil, err
++	}
++
++	var nk *NaclSigningKeyPublic
++	nk, err = naclSig.Verify()
++	if err != nil {
++		return "", nil, nil, err
++	}
++
++	payload = naclSig.Payload
++	return nk.GetKID(), payload, fullBody, nil
++}
+diff --git a/go/libkb/errors.go b/go/libkb/errors.go
+index e62d60b3728..85545a996bd 100644
+--- a/go/libkb/errors.go
++++ b/go/libkb/errors.go
+@@ -413,20 +413,6 @@ func (e BadEmailError) Error() string {
+ 
+ //=============================================================================
+ 
+-type BadKeyError struct {
+-	Msg string
+-}
+-
+-func (p BadKeyError) Error() string {
+-	msg := "Bad key found"
+-	if len(p.Msg) != 0 {
+-		msg = msg + ": " + p.Msg
+-	}
+-	return msg
+-}
+-
+-//=============================================================================
+-
+ type BadFingerprintError struct {
+ 	fp1, fp2 PGPFingerprint
+ }
+@@ -734,19 +720,6 @@ func NewNoUsernameError() NoUsernameError { return NoUsernameError{} }
+ 
+ //=============================================================================
+ 
+-type VerificationError struct {
+-	Cause error
+-}
+-
+-func (e VerificationError) Error() string {
+-	if e.Cause == nil {
+-		return "Verification failed"
+-	}
+-	return fmt.Sprintf("Verification failed: %v", e.Cause)
+-}
+-
+-//=============================================================================
+-
+ type NoKeyringsError struct{}
+ 
+ func (k NoKeyringsError) Error() string {
+@@ -1807,14 +1780,6 @@ func (e BadSignaturePrefixError) Error() string { return "bad signature prefix"
+ 
+ //=============================================================================
+ 
+-type UnhandledSignatureError struct {
+-	version int
+-}
+-
+-func (e UnhandledSignatureError) Error() string {
+-	return fmt.Sprintf("unhandled signature version: %d", e.version)
+-}
+-
+ type UserDeletedError struct {
+ 	Msg string
+ }
+diff --git a/go/libkb/kbpackets.go b/go/libkb/kbpackets.go
+index 73e9c1d31b9..ad9605b92ad 100644
+--- a/go/libkb/kbpackets.go
++++ b/go/libkb/kbpackets.go
+@@ -3,8 +3,6 @@
+ 
+ package libkb
+ 
+-// Code for encoding and decoding Keybase packet types.
+-
+ import (
+ 	"encoding/base64"
+ 
+@@ -28,23 +26,6 @@ func DecodeArmoredSKBPacket(s string) (*SKB, error) {
+ 	return DecodeSKBPacket(b)
+ }
+ 
+-func DecodeNaclSigInfoPacket(data []byte) (NaclSigInfo, error) {
+-	var info NaclSigInfo
+-	err := kbcrypto.DecodePacketFromBytes(data, &info)
+-	if err != nil {
+-		return NaclSigInfo{}, err
+-	}
+-	return info, nil
+-}
+-
+-func DecodeArmoredNaclSigInfoPacket(s string) (NaclSigInfo, error) {
+-	b, err := base64.StdEncoding.DecodeString(s)
+-	if err != nil {
+-		return NaclSigInfo{}, err
+-	}
+-	return DecodeNaclSigInfoPacket(b)
+-}
+-
+ func DecodeNaclEncryptionInfoPacket(data []byte) (NaclEncryptionInfo, error) {
+ 	var info NaclEncryptionInfo
+ 	err := kbcrypto.DecodePacketFromBytes(data, &info)
+diff --git a/go/libkb/kbpackets_test.go b/go/libkb/kbpackets_test.go
+index fbbf9ae8926..a4f8d1a5c21 100644
+--- a/go/libkb/kbpackets_test.go
++++ b/go/libkb/kbpackets_test.go
+@@ -39,7 +39,7 @@ faNzaWfEQG3uIt5g6X6NRAjnHdF1NSRO5UYJD1B0Ku1ixBIeS2zuSAGR0pts2Lbl+Cz3BGvu9isq
+ 
+ func TestFishyMsgpack(t *testing.T) {
+ 	// This message has a duplicate key ("detached") in the top-level map
+-	info, err := DecodeArmoredNaclSigInfoPacket(`
++	info, err := kbcrypto.DecodeArmoredNaclSigInfoPacket(`
+ hKRib2R5hqhkZXRhY2hlZMOoZGV0YWNoZWTCqWhhc2hfdHlwZQqja2V5xCMBIHPpctUn+7QopWm+
+ n1CVw28iikWy6ybCMUUdVRijfKQjCqdwYXlsb2FkxQPteyJib2R5Ijp7ImRldmljZSI6eyJpZCI6
+ IjA1Nzg0M2MyMDI1MTkyNmFjYzBkNWRiMzEyNjk3OTE4Iiwia2lkIjoiMDEyMTM3OWQ1MzcwYWVi
+@@ -68,7 +68,7 @@ tuX4LPcEa+72KyrsweuAJravU8SjgL/gAKhzaWdfdHlwZSCjdGFnzQICp3ZlcnNpb24B
+ // Guard against unexpected codec encoding changes, in particular for
+ // ints.
+ func TestHardcodedPacketEncode(t *testing.T) {
+-	var info NaclSigInfo
++	var info kbcrypto.NaclSigInfo
+ 	p, err := kbcrypto.NewKeybasePacket(&info)
+ 	require.NoError(t, err)
+ 
+diff --git a/go/libkb/keyfamily.go b/go/libkb/keyfamily.go
+index 61e50b32610..11dfd84bcfc 100644
+--- a/go/libkb/keyfamily.go
++++ b/go/libkb/keyfamily.go
+@@ -12,6 +12,7 @@ import (
+ 	"runtime/debug"
+ 	"time"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+ 	jsonw "github.com/keybase/go-jsonw"
+ )
+@@ -542,7 +543,7 @@ func (ckf ComputedKeyFamily) FindActiveSibkeyAtTime(kid keybase1.KID, t time.Tim
+ 	if liveCki == nil || err != nil {
+ 		// err gets returned.
+ 	} else if !liveCki.Sibkey {
+-		err = BadKeyError{fmt.Sprintf("The key '%s' wasn't delegated as a sibkey", kid)}
++		err = kbcrypto.BadKeyError{fmt.Sprintf("The key '%s' wasn't delegated as a sibkey", kid)}
+ 	} else {
+ 		key, err = ckf.FindKeyWithKIDUnsafe(kid)
+ 		cki = *liveCki
+@@ -560,14 +561,14 @@ func (ckf ComputedKeyFamily) FindActiveEncryptionSubkey(kid keybase1.KID) (ret G
+ 		return nil, cki, err
+ 	}
+ 	if ckip.Sibkey {
+-		return nil, cki, BadKeyError{fmt.Sprintf("The key '%s' was delegated as a sibkey", kid.String())}
++		return nil, cki, kbcrypto.BadKeyError{fmt.Sprintf("The key '%s' was delegated as a sibkey", kid.String())}
+ 	}
+ 	key, err := ckf.FindKeyWithKIDUnsafe(kid)
+ 	if err != nil {
+ 		return nil, cki, err
+ 	}
+ 	if !CanEncrypt(key) {
+-		return nil, cki, BadKeyError{fmt.Sprintf("The key '%s' cannot encrypt", kid.String())}
++		return nil, cki, kbcrypto.BadKeyError{fmt.Sprintf("The key '%s' cannot encrypt", kid.String())}
+ 	}
+ 	return key, *ckip, nil
+ }
+diff --git a/go/libkb/naclwrap.go b/go/libkb/naclwrap.go
+index e7673ebc9ec..4130da5209d 100644
+--- a/go/libkb/naclwrap.go
++++ b/go/libkb/naclwrap.go
+@@ -18,17 +18,6 @@ import (
+ 	"golang.org/x/crypto/nacl/box"
+ )
+ 
+-type NaclSigInfo struct {
+-	Kid      keybase1.BinaryKID       `codec:"key"`
+-	Payload  []byte                   `codec:"payload,omitempty"`
+-	Sig      kbcrypto.NaclSignature   `codec:"sig"`
+-	SigType  kbcrypto.AlgoType        `codec:"sig_type"`
+-	HashType int                      `codec:"hash_type"`
+-	Detached bool                     `codec:"detached"`
+-	Version  int                      `codec:"version,omitempty"`
+-	Prefix   kbcrypto.SignaturePrefix `codec:"prefix,omitempty"`
+-}
+-
+ type NaclEncryptionInfo struct {
+ 	Ciphertext     []byte            `codec:"ciphertext"`
+ 	EncryptionType kbcrypto.AlgoType `codec:"enc_type"`
+@@ -99,12 +88,12 @@ func importNaclHex(s string, typ byte, bodyLen int) (ret []byte, err error) {
+ func importNaclKid(bkid []byte, typ byte, bodyLen int) (ret []byte, err error) {
+ 	l := len(bkid)
+ 	if l != bodyLen+3 {
+-		err = BadKeyError{fmt.Sprintf("Wrong length; wanted %d, got %d", bodyLen+3, l)}
++		err = kbcrypto.BadKeyError{fmt.Sprintf("Wrong length; wanted %d, got %d", bodyLen+3, l)}
+ 		return
+ 	}
+ 
+ 	if bkid[0] != byte(kbcrypto.KeybaseKIDV1) || bkid[l-1] != byte(kbcrypto.IDSuffixKID) || bkid[1] != typ {
+-		err = BadKeyError{"bad header or trailer bytes"}
++		err = kbcrypto.BadKeyError{"bad header or trailer bytes"}
+ 		return
+ 	}
+ 	ret = bkid[2:(l - 1)]
+@@ -119,7 +108,7 @@ func ImportNaclSigningKeyPairFromBytes(pub []byte, priv []byte) (ret NaclSigning
+ 	copy(ret.Public[:], body)
+ 	if priv == nil {
+ 	} else if len(priv) != ed25519.PrivateKeySize {
+-		err = BadKeyError{"Secret key was wrong size"}
++		err = kbcrypto.BadKeyError{"Secret key was wrong size"}
+ 	} else {
+ 		ret.Private = &NaclSigningKeyPrivate{}
+ 		copy(ret.Private[:], priv)
+@@ -131,18 +120,18 @@ func ImportKeypairFromKID(k keybase1.KID) (key GenericKey, err error) {
+ 	kid := k.ToBytes()
+ 	l := len(kid)
+ 	if l < 3 {
+-		err = BadKeyError{"KID was way too short"}
++		err = kbcrypto.BadKeyError{"KID was way too short"}
+ 		return
+ 	}
+ 	if kid[0] != byte(kbcrypto.KeybaseKIDV1) || kid[l-1] != byte(kbcrypto.IDSuffixKID) {
+-		err = BadKeyError{"bad header or trailer found"}
++		err = kbcrypto.BadKeyError{"bad header or trailer found"}
+ 		return
+ 	}
+ 	raw := kid[2:(l - 1)]
+ 	switch kid[1] {
+ 	case byte(kbcrypto.KIDNaclEddsa):
+ 		if len(raw) != ed25519.PublicKeySize {
+-			err = BadKeyError{"Bad EdDSA key size"}
++			err = kbcrypto.BadKeyError{"Bad EdDSA key size"}
+ 		} else {
+ 			tmp := NaclSigningKeyPair{}
+ 			copy(tmp.Public[:], raw)
+@@ -150,14 +139,14 @@ func ImportKeypairFromKID(k keybase1.KID) (key GenericKey, err error) {
+ 		}
+ 	case byte(kbcrypto.KIDNaclDH):
+ 		if len(raw) != NaclDHKeysize {
+-			err = BadKeyError{"Bad DH key size"}
++			err = kbcrypto.BadKeyError{"Bad DH key size"}
+ 		} else {
+ 			tmp := NaclDHKeyPair{}
+ 			copy(tmp.Public[:], raw)
+ 			key = tmp
+ 		}
+ 	default:
+-		err = BadKeyError{fmt.Sprintf("Bad key prefix: %d", kid[1])}
++		err = kbcrypto.BadKeyError{fmt.Sprintf("Bad key prefix: %d", kid[1])}
+ 	}
+ 	return
+ }
+@@ -191,7 +180,7 @@ func ImportNaclDHKeyPairFromBytes(pub []byte, priv []byte) (ret NaclDHKeyPair, e
+ 	copy(ret.Public[:], body)
+ 	if priv == nil {
+ 	} else if len(priv) != NaclDHKeysize {
+-		err = BadKeyError{"Secret key was wrong size"}
++		err = kbcrypto.BadKeyError{"Secret key was wrong size"}
+ 	} else {
+ 		ret.Private = &NaclDHKeyPrivate{}
+ 		copy(ret.Private[:], priv)
+@@ -302,7 +291,7 @@ func (k NaclDHKeyPair) HasSecretKey() bool {
+ func (k NaclSigningKeyPair) CanSign() bool { return k.Private != nil }
+ func (k NaclDHKeyPair) CanSign() bool      { return false }
+ 
+-func (k NaclSigningKeyPair) Sign(msg []byte) (ret *NaclSigInfo, err error) {
++func (k NaclSigningKeyPair) Sign(msg []byte) (ret *kbcrypto.NaclSigInfo, err error) {
+ 	if k.Private == nil {
+ 		err = NoSecretKeyError{}
+ 		return
+@@ -310,7 +299,7 @@ func (k NaclSigningKeyPair) Sign(msg []byte) (ret *NaclSigInfo, err error) {
+ 
+ 	// Version 0 is just over the unprefixed message (assume version 0 if no version present)
+ 	// Version 1 is the same.
+-	ret = &NaclSigInfo{
++	ret = &kbcrypto.NaclSigInfo{
+ 		Kid:      k.GetBinaryKID(),
+ 		Payload:  msg,
+ 		Sig:      *k.Private.Sign(msg),
+@@ -334,7 +323,7 @@ func (r EncryptionReason) Bytes() []byte {
+ 	return []byte(r)
+ }
+ 
+-func (k NaclSigningKeyPair) SignV2(msg []byte, prefix kbcrypto.SignaturePrefix) (ret *NaclSigInfo, err error) {
++func (k NaclSigningKeyPair) SignV2(msg []byte, prefix kbcrypto.SignaturePrefix) (ret *kbcrypto.NaclSigInfo, err error) {
+ 	if k.Private == nil {
+ 		err = NoSecretKeyError{}
+ 		return
+@@ -347,7 +336,7 @@ func (k NaclSigningKeyPair) SignV2(msg []byte, prefix kbcrypto.SignaturePrefix)
+ 
+ 	// Version 0 is just over the unprefixed message (assume version 0 if no version present)
+ 	// Version 1 is the same.
+-	ret = &NaclSigInfo{
++	ret = &kbcrypto.NaclSigInfo{
+ 		Kid:      k.GetBinaryKID(),
+ 		Payload:  msg,
+ 		Sig:      *k.Private.Sign(prefix.Prefix(msg)),
+@@ -379,7 +368,7 @@ func (k NaclSigningKeyPair) SignToString(msg []byte) (sig string, id keybase1.Si
+ func (k NaclSigningKeyPair) VerifyStringAndExtract(ctx VerifyContext, sig string) (msg []byte, id keybase1.SigID, err error) {
+ 	var kidInSig keybase1.KID
+ 	var fullSigBody []byte
+-	kidInSig, msg, fullSigBody, err = NaclVerifyAndExtract(sig)
++	kidInSig, msg, fullSigBody, err = kbcrypto.NaclVerifyAndExtract(sig)
+ 	if err != nil {
+ 		return
+ 	}
+@@ -394,31 +383,6 @@ func (k NaclSigningKeyPair) VerifyStringAndExtract(ctx VerifyContext, sig string
+ 	return
+ }
+ 
+-// NaclVerifyAndExtract interprets the given string as a NaCl-signed messaged, in
+-// the keybase NaclSigInfo (v1) format. It will check that the signature verified, and if so,
+-// will return the KID of the key that was used for the verification, the payload of the signature,
+-// the full body of the decoded SignInfo, and an error
+-func NaclVerifyAndExtract(s string) (kid keybase1.KID, payload []byte, fullBody []byte, err error) {
+-	fullBody, err = base64.StdEncoding.DecodeString(s)
+-	if err != nil {
+-		return "", nil, nil, err
+-	}
+-
+-	naclSig, err := DecodeNaclSigInfoPacket(fullBody)
+-	if err != nil {
+-		return "", nil, nil, err
+-	}
+-
+-	var nk *kbcrypto.NaclSigningKeyPublic
+-	nk, err = naclSig.Verify()
+-	if err != nil {
+-		return "", nil, nil, err
+-	}
+-
+-	payload = naclSig.Payload
+-	return nk.GetKID(), payload, fullBody, nil
+-}
+-
+ func (k NaclSigningKeyPair) VerifyString(ctx VerifyContext, sig string, msg []byte) (id keybase1.SigID, err error) {
+ 	extractedMsg, resID, err := k.VerifyStringAndExtract(ctx, sig)
+ 	if err != nil {
+@@ -447,10 +411,6 @@ func (k NaclDHKeyPair) VerifyString(ctx VerifyContext, sig string, msg []byte) (
+ 	return
+ }
+ 
+-func (s *NaclSigInfo) GetTagAndVersion() (kbcrypto.PacketTag, kbcrypto.PacketVersion) {
+-	return kbcrypto.TagSignature, kbcrypto.KeybasePacketV1
+-}
+-
+ func EncryptionKIDToPublicKeyBytes(bk []byte) ([]byte, error) {
+ 	if len(bk) != 3+NaclDHKeysize {
+ 		return []byte{}, fmt.Errorf("invalid DH encryption key kbcrypto.KID (wrong length)")
+@@ -461,32 +421,6 @@ func EncryptionKIDToPublicKeyBytes(bk []byte) ([]byte, error) {
+ 	return bk[2 : len(bk)-1], nil
+ }
+ 
+-func (s NaclSigInfo) Verify() (*kbcrypto.NaclSigningKeyPublic, error) {
+-	key := kbcrypto.KIDToNaclSigningKeyPublic(s.Kid)
+-	if key == nil {
+-		return nil, BadKeyError{}
+-	}
+-
+-	switch s.Version {
+-	case 0, 1:
+-		if !key.Verify(s.Payload, &s.Sig) {
+-			return nil, VerificationError{}
+-		}
+-	case 2:
+-		if !key.Verify(s.Prefix.Prefix(s.Payload), &s.Sig) {
+-			return nil, VerificationError{}
+-		}
+-	default:
+-		return nil, UnhandledSignatureError{}
+-	}
+-
+-	return key, nil
+-}
+-
+-func (s *NaclSigInfo) ArmoredEncode() (ret string, err error) {
+-	return kbcrypto.EncodePacketToArmoredString(s)
+-}
+-
+ func (k NaclSigningKeyPair) ExportPublicAndPrivate() (RawPublicKey, RawPrivateKey, error) {
+ 	return RawPublicKey(k.GetKID().ToBytes()), RawPrivateKey(k.Private[:]), nil
+ }
+@@ -592,13 +526,13 @@ func KbOpenSig(armored string) ([]byte, error) {
+ 
+ func SigExtractKbPayloadAndKID(armored string) (payload []byte, kid keybase1.KID, sigID keybase1.SigID, err error) {
+ 	var byt []byte
+-	var sig NaclSigInfo
++	var sig kbcrypto.NaclSigInfo
+ 
+ 	if byt, err = KbOpenSig(armored); err != nil {
+ 		return nil, kid, sigID, err
+ 	}
+ 
+-	if sig, err = DecodeNaclSigInfoPacket(byt); err != nil {
++	if sig, err = kbcrypto.DecodeNaclSigInfoPacket(byt); err != nil {
+ 		return nil, kid, sigID, err
+ 	}
+ 	sigID = ComputeSigIDFromSigBody(byt)
+diff --git a/go/libkb/naclwrap_test.go b/go/libkb/naclwrap_test.go
+index 56f3ab73346..f8d2ca4cf68 100644
+--- a/go/libkb/naclwrap_test.go
++++ b/go/libkb/naclwrap_test.go
+@@ -109,7 +109,7 @@ func TestVerifyBytesAccept(t *testing.T) {
+ 	msg := []byte("test message")
+ 	sig := keyPair.Private.Sign(msg)
+ 	if !keyPair.Public.Verify(msg, sig) {
+-		t.Error(VerificationError{})
++		t.Error(kbcrypto.VerificationError{})
+ 	}
+ }
+ 
+@@ -252,7 +252,7 @@ func TestNaclPrefixedSigs(t *testing.T) {
+ 	if err == nil {
+ 		t.Fatal("expected an error after we jiggled the version to 1")
+ 	}
+-	if _, ok := err.(VerificationError); !ok {
++	if _, ok := err.(kbcrypto.VerificationError); !ok {
+ 		t.Fatal("expected a VerificationError")
+ 	}
+ 
+@@ -262,7 +262,7 @@ func TestNaclPrefixedSigs(t *testing.T) {
+ 	if err == nil {
+ 		t.Fatal("expected an error after we jiggled the prefix to the wrong one")
+ 	}
+-	if _, ok := err.(VerificationError); !ok {
++	if _, ok := err.(kbcrypto.VerificationError); !ok {
+ 		t.Fatal("expected a VerificationError")
+ 	}
+ 
+diff --git a/go/libkb/nist.go b/go/libkb/nist.go
+index fbd229b6886..dbe20c9eb6c 100644
+--- a/go/libkb/nist.go
++++ b/go/libkb/nist.go
+@@ -261,7 +261,7 @@ func (n *NIST) generate(ctx context.Context, uid keybase1.UID, deviceID keybase1
+ 	if err != nil {
+ 		return err
+ 	}
+-	var sigInfo *NaclSigInfo
++	var sigInfo *kbcrypto.NaclSigInfo
+ 	var payloadPacked []byte
+ 	payloadPacked, err = MsgpackEncode(payload)
+ 	if err != nil {
+diff --git a/go/libkb/pgp_key.go b/go/libkb/pgp_key.go
+index 38e4a594ba9..647e2aabb89 100644
+--- a/go/libkb/pgp_key.go
++++ b/go/libkb/pgp_key.go
+@@ -586,9 +586,9 @@ func (k *PGPKeyBundle) CheckSecretKey() (err error) {
+ 	if k.PrivateKey == nil {
+ 		err = NoSecretKeyError{}
+ 	} else if k.PrivateKey.Encrypted {
+-		err = BadKeyError{"PGP key material should be unencrypted"}
++		err = kbcrypto.BadKeyError{"PGP key material should be unencrypted"}
+ 	} else if !FindPGPPrivateKey(k) && k.GPGFallbackKey == nil {
+-		err = BadKeyError{"no private key material or GPGKey"}
++		err = kbcrypto.BadKeyError{"no private key material or GPGKey"}
+ 	}
+ 	return
+ }
+diff --git a/go/libkb/rpc_exim.go b/go/libkb/rpc_exim.go
+index 79f3fe4d0da..1fcff578cd0 100644
+--- a/go/libkb/rpc_exim.go
++++ b/go/libkb/rpc_exim.go
+@@ -16,6 +16,7 @@ import (
+ 	"strings"
+ 	"time"
+ 
++	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/keybase/client/go/protocol/chat1"
+ 	"github.com/keybase/client/go/protocol/gregor1"
+ 	keybase1 "github.com/keybase/client/go/protocol/keybase1"
+@@ -422,7 +423,7 @@ func ImportStatusAsError(g *GlobalContext, s *keybase1.Status) error {
+ 		}
+ 		return ret
+ 	case SCSigCannotVerify:
+-		ret := VerificationError{}
++		ret := kbcrypto.VerificationError{}
+ 		for _, field := range s.Fields {
+ 			switch field.Key {
+ 			case "Cause":
+@@ -1912,16 +1913,6 @@ func (e DecryptionError) ToStatus() keybase1.Status {
+ 	}
+ }
+ 
+-func (e VerificationError) ToStatus() keybase1.Status {
+-	return keybase1.Status{
+-		Code: SCSigCannotVerify,
+-		Name: "SC_SIG_CANNOT_VERIFY",
+-		Fields: []keybase1.StringKVPair{
+-			{Key: "Cause", Value: e.Cause.Error()},
+-		},
+-	}
+-}
+-
+ func (e NoSigChainError) ToStatus() keybase1.Status {
+ 	return keybase1.Status{
+ 		Code: SCKeyNoEldest,
+diff --git a/go/libkb/saltpack_verify.go b/go/libkb/saltpack_verify.go
+index 6ec7cebab0a..9347b037bf6 100644
+--- a/go/libkb/saltpack_verify.go
++++ b/go/libkb/saltpack_verify.go
+@@ -44,30 +44,30 @@ func SaltpackVerify(g SaltpackVerifyContext, source io.Reader, sink io.WriteClos
+ 	}
+ 	if err != nil {
+ 		g.GetLog().Debug("saltpack.NewDearmor62VerifyStream error: %s", err)
+-		return VerificationError{Cause: err}
++		return kbcrypto.VerificationError{Cause: err}
+ 	}
+ 
+ 	if checkSender != nil {
+ 		if err = checkSender(skey); err != nil {
+-			return VerificationError{Cause: err}
++			return kbcrypto.VerificationError{Cause: err}
+ 		}
+ 	}
+ 
+ 	n, err := io.Copy(sink, vs)
+ 	if err != nil {
+-		return VerificationError{Cause: err}
++		return kbcrypto.VerificationError{Cause: err}
+ 	}
+ 
+ 	if sc.Armored {
+ 		if err = checkSaltpackBrand(brand); err != nil {
+-			return VerificationError{Cause: err}
++			return kbcrypto.VerificationError{Cause: err}
+ 		}
+ 	}
+ 
+ 	g.GetLog().Debug("Verify: read %d bytes", n)
+ 
+ 	if err := sink.Close(); err != nil {
+-		return VerificationError{Cause: err}
++		return kbcrypto.VerificationError{Cause: err}
+ 	}
+ 	return nil
+ }
+@@ -93,22 +93,22 @@ func SaltpackVerifyDetached(g SaltpackVerifyContext, message io.Reader, signatur
+ 		skey, brand, err = saltpack.Dearmor62VerifyDetachedReader(saltpack.CheckKnownMajorVersion, message, string(signature), kr)
+ 		if err != nil {
+ 			g.GetLog().Debug("saltpack.Dearmor62VerifyDetachedReader error: %s", err)
+-			return VerificationError{Cause: err}
++			return kbcrypto.VerificationError{Cause: err}
+ 		}
+ 		if err = checkSaltpackBrand(brand); err != nil {
+-			return VerificationError{Cause: err}
++			return kbcrypto.VerificationError{Cause: err}
+ 		}
+ 	} else {
+ 		skey, err = saltpack.VerifyDetachedReader(saltpack.CheckKnownMajorVersion, message, signature, kr)
+ 		if err != nil {
+ 			g.GetLog().Debug("saltpack.VerifyDetachedReader error: %s", err)
+-			return VerificationError{Cause: err}
++			return kbcrypto.VerificationError{Cause: err}
+ 		}
+ 	}
+ 
+ 	if checkSender != nil {
+ 		if err = checkSender(skey); err != nil {
+-			return VerificationError{Cause: err}
++			return kbcrypto.VerificationError{Cause: err}
+ 		}
+ 	}
+ 
+diff --git a/go/libkb/skb.go b/go/libkb/skb.go
+index 89650408e98..7ae9fd20118 100644
+--- a/go/libkb/skb.go
++++ b/go/libkb/skb.go
+@@ -184,7 +184,7 @@ func (s *SKB) HumanDescription(owner *User) (string, error) {
+ func (s *SKB) pgpHumanDescription(key GenericKey) (string, error) {
+ 	pgpKey, ok := key.(*PGPKeyBundle)
+ 	if !ok {
+-		return "", BadKeyError{Msg: "not pgp key despite skb algo type"}
++		return "", kbcrypto.BadKeyError{Msg: "not pgp key despite skb algo type"}
+ 	}
+ 
+ 	return pgpKey.HumanDescription(), nil
+@@ -221,7 +221,7 @@ func (s *SKB) unlockSecretKeyFromSecretRetriever(m MetaContext, secretRetriever
+ 	case LKSecVersion:
+ 		unlocked, err = s.lksUnlockWithSecretRetriever(m, secretRetriever)
+ 	default:
+-		err = BadKeyError{fmt.Sprintf("Can't unlock secret from secret retriever with protection type %d", int(s.Priv.Encryption))}
++		err = kbcrypto.BadKeyError{fmt.Sprintf("Can't unlock secret from secret retriever with protection type %d", int(s.Priv.Encryption))}
+ 	}
+ 
+ 	if err == nil {
+@@ -276,7 +276,7 @@ func (s *SKB) UnlockSecretKey(m MetaContext, passphrase string, tsec Triplesec,
+ 			m.ActiveDevice().CachePassphraseStream(NewPassphraseStreamCache(tsec, pps))
+ 		}
+ 	default:
+-		err = BadKeyError{fmt.Sprintf("Can't unlock secret with protection type %d", int(s.Priv.Encryption))}
++		err = kbcrypto.BadKeyError{fmt.Sprintf("Can't unlock secret with protection type %d", int(s.Priv.Encryption))}
+ 		return nil, err
+ 	}
+ 	key, err = s.parseUnlocked(unlocked)
+@@ -297,7 +297,7 @@ func (s *SKB) parseUnlocked(unlocked []byte) (key GenericKey, err error) {
+ 	}
+ 
+ 	if key == nil {
+-		err = BadKeyError{"can't parse secret key after unlock"}
++		err = kbcrypto.BadKeyError{"can't parse secret key after unlock"}
+ 	}
+ 	if err != nil {
+ 		return
+
+From 4c41241ff8dcf4b0fc4c338d406605fdbf2c0e0b Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Thu, 30 Aug 2018 00:28:08 -0700
+Subject: [PATCH 10/12] Move ut
+
+---
+ go/kbcrypto/kbpackets.go      | 10 -------
+ go/kbcrypto/kbpackets_test.go | 56 +++++++++++++++++++++++++++++++++++
+ go/libkb/kbpackets_test.go    | 46 ----------------------------
+ 3 files changed, 56 insertions(+), 56 deletions(-)
+ create mode 100644 go/kbcrypto/kbpackets_test.go
+
+diff --git a/go/kbcrypto/kbpackets.go b/go/kbcrypto/kbpackets.go
+index 5e63fb119e7..956cb5e1f61 100644
+--- a/go/kbcrypto/kbpackets.go
++++ b/go/kbcrypto/kbpackets.go
+@@ -191,11 +191,6 @@ func newKeybasePacket(body Packetable) (*KeybasePacket, error) {
+ 	return &ret, nil
+ }
+ 
+-// TODO: Remove.
+-func NewKeybasePacket(body Packetable) (*KeybasePacket, error) {
+-	return newKeybasePacket(body)
+-}
+-
+ func (p *KeybasePacket) hashToBytes() ([]byte, error) {
+ 	// We don't include the Hash field in the encoded bytes that we hash,
+ 	// because if we did then the result wouldn't be stable. To work around
+@@ -244,11 +239,6 @@ func (p *KeybasePacket) encode() ([]byte, error) {
+ 	return encoded, err
+ }
+ 
+-// TODO: Remove.
+-func (p *KeybasePacket) Encode() ([]byte, error) {
+-	return p.encode()
+-}
+-
+ func (p *KeybasePacket) armoredEncode() (ret string, err error) {
+ 	var buf bytes.Buffer
+ 	b64 := base64.NewEncoder(base64.StdEncoding, &buf)
+diff --git a/go/kbcrypto/kbpackets_test.go b/go/kbcrypto/kbpackets_test.go
+new file mode 100644
+index 00000000000..23db3669e93
+--- /dev/null
++++ b/go/kbcrypto/kbpackets_test.go
+@@ -0,0 +1,56 @@
++// Copyright 2018 Keybase, Inc. All rights reserved. Use of
++// this source code is governed by the included BSD license.
++
++package kbcrypto
++
++import (
++	"testing"
++
++	"github.com/keybase/client/go/kbcrypto"
++	"github.com/stretchr/testify/require"
++)
++
++func TestFishyMsgpack(t *testing.T) {
++	// This message has a duplicate key ("detached") in the top-level map
++	info, err := kbcrypto.DecodeArmoredNaclSigInfoPacket(`
++hKRib2R5hqhkZXRhY2hlZMOoZGV0YWNoZWTCqWhhc2hfdHlwZQqja2V5xCMBIHPpctUn+7QopWm+
++n1CVw28iikWy6ybCMUUdVRijfKQjCqdwYXlsb2FkxQPteyJib2R5Ijp7ImRldmljZSI6eyJpZCI6
++IjA1Nzg0M2MyMDI1MTkyNmFjYzBkNWRiMzEyNjk3OTE4Iiwia2lkIjoiMDEyMTM3OWQ1MzcwYWVi
++NGU5ZjdhYTRiNTI3MGY1ZTQ4ODA4NWE2NDdlMGRiMjQ3N2VkZDNmM2M1MGUzZDE0ZjQwNGYwYSIs
++InN0YXR1cyI6MX0sImtleSI6eyJlbGRlc3Rfa2lkIjoiMDEyMGM3YTk0YzQ0Mjc2MDk1ZTczNjVm
++NDliNjdhZTY4ZjdiY2JjODA1YzU4Mjc5N2Y2OTBiNjdiMDhmMDVlZGZlMWIwYSIsImhvc3QiOiJr
++ZXliYXNlLmlvIiwia2lkIjoiMDEyMDczZTk3MmQ1MjdmYmI0MjhhNTY5YmU5ZjUwOTVjMzZmMjI4
++YTQ1YjJlYjI2YzIzMTQ1MWQ1NTE4YTM3Y2E0MjMwYSIsInVpZCI6ImEwOTE1NTIxMDUzMmQ5NjA4
++MWM0YTNhOTljNjQ4NDE5IiwidXNlcm5hbWUiOiJsd3BwXzQyMmFiNzk4NDcifSwic3Via2V5Ijp7
++ImtpZCI6IjAxMjEzNzlkNTM3MGFlYjRlOWY3YWE0YjUyNzBmNWU0ODgwODVhNjQ3ZTBkYjI0Nzdl
++ZGQzZjNjNTBlM2QxNGY0MDRmMGEiLCJwYXJlbnRfa2lkIjoiMDEyMDczZTk3MmQ1MjdmYmI0Mjhh
++NTY5YmU5ZjUwOTVjMzZmMjI4YTQ1YjJlYjI2YzIzMTQ1MWQ1NTE4YTM3Y2E0MjMwYSJ9LCJ0eXBl
++Ijoic3Via2V5IiwidmVyc2lvbiI6MX0sImNsaWVudCI6eyJuYW1lIjoia2V5YmFzZS5pbyBnbyBj
++bGllbnQiLCJ2ZXJzaW9uIjoiMS4wLjAifSwiY3RpbWUiOjE0NDM0NjU5NDMsImV4cGlyZV9pbiI6
++NTA0NTc2MDAwLCJtZXJrbGVfcm9vdCI6eyJjdGltZSI6MTQ0MzQ2NTk0MywiaGFzaCI6IjhlYjMz
++YjA2YzFlMDIyMWFjYmFjZTMwNmQyM2VhMWQ5MjJiYWFhY2M2YWJiZDI3YzM5Y2Y2M2JjYzI2NzM0
++ZWY0ODUwY2Y4NzZhZmU2OTE1Nzg0OTg0MTNlMmU5NzQzYjc5Yjk3YmUxNjFlYzA4ZGI0Y2YyOTZi
++ZDVlOThiNWZlIiwic2Vxbm8iOjU2M30sInByZXYiOiJlZTAwNzg1ODI0NmFkZjg4NTU5NzY2ZjE2
++NGQwYjE5NTMwMzIwOWNiZDgyYWZhN2ZjNmRlZDE4YjQ5YjdiNmIyIiwic2Vxbm8iOjQsInRhZyI6
++InNpZ25hdHVyZSJ9o3NpZ8RAbe4i3mDpfo1ECOcd0XU1JE7lRgkPUHQq7WLEEh5LbO5IAZHSm2zY
++tuX4LPcEa+72KyrsweuAJravU8SjgL/gAKhzaWdfdHlwZSCjdGFnzQICp3ZlcnNpb24B
++`)
++	require.IsType(t, err, kbcrypto.FishyMsgpackError{}, "info=%+v, err+%+v", info, err)
++}
++
++// Guard against unexpected codec encoding changes, in particular for
++// ints.
++func TestHardcodedPacketEncode(t *testing.T) {
++	var info NaclSigInfo
++	p, err := newKeybasePacket(&info)
++	require.NoError(t, err)
++
++	p.Hash = nil
++
++	bytes, err := p.encode()
++	require.NoError(t, err)
++	// In particular, {0xcd, 0x2, 0x2} shouldn't change to
++	// {0xd1, 0x2, 0x2}.
++	expectedBytes := []byte{0x83, 0xa4, 0x62, 0x6f, 0x64, 0x79, 0xc0, 0xa3, 0x74, 0x61, 0x67, 0xcd, 0x2, 0x2, 0xa7, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x1}
++	require.Equal(t, expectedBytes, bytes)
++}
+diff --git a/go/libkb/kbpackets_test.go b/go/libkb/kbpackets_test.go
+index a4f8d1a5c21..49fb1410a5d 100644
+--- a/go/libkb/kbpackets_test.go
++++ b/go/libkb/kbpackets_test.go
+@@ -6,7 +6,6 @@ package libkb
+ import (
+ 	"testing"
+ 
+-	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/stretchr/testify/require"
+ )
+ 
+@@ -37,51 +36,6 @@ faNzaWfEQG3uIt5g6X6NRAjnHdF1NSRO5UYJD1B0Ku1ixBIeS2zuSAGR0pts2Lbl+Cz3BGvu9isq
+ 	require.Error(t, err, "Malformed msgpack should fail to decode, but decoded to: %#v", info)
+ }
+ 
+-func TestFishyMsgpack(t *testing.T) {
+-	// This message has a duplicate key ("detached") in the top-level map
+-	info, err := kbcrypto.DecodeArmoredNaclSigInfoPacket(`
+-hKRib2R5hqhkZXRhY2hlZMOoZGV0YWNoZWTCqWhhc2hfdHlwZQqja2V5xCMBIHPpctUn+7QopWm+
+-n1CVw28iikWy6ybCMUUdVRijfKQjCqdwYXlsb2FkxQPteyJib2R5Ijp7ImRldmljZSI6eyJpZCI6
+-IjA1Nzg0M2MyMDI1MTkyNmFjYzBkNWRiMzEyNjk3OTE4Iiwia2lkIjoiMDEyMTM3OWQ1MzcwYWVi
+-NGU5ZjdhYTRiNTI3MGY1ZTQ4ODA4NWE2NDdlMGRiMjQ3N2VkZDNmM2M1MGUzZDE0ZjQwNGYwYSIs
+-InN0YXR1cyI6MX0sImtleSI6eyJlbGRlc3Rfa2lkIjoiMDEyMGM3YTk0YzQ0Mjc2MDk1ZTczNjVm
+-NDliNjdhZTY4ZjdiY2JjODA1YzU4Mjc5N2Y2OTBiNjdiMDhmMDVlZGZlMWIwYSIsImhvc3QiOiJr
+-ZXliYXNlLmlvIiwia2lkIjoiMDEyMDczZTk3MmQ1MjdmYmI0MjhhNTY5YmU5ZjUwOTVjMzZmMjI4
+-YTQ1YjJlYjI2YzIzMTQ1MWQ1NTE4YTM3Y2E0MjMwYSIsInVpZCI6ImEwOTE1NTIxMDUzMmQ5NjA4
+-MWM0YTNhOTljNjQ4NDE5IiwidXNlcm5hbWUiOiJsd3BwXzQyMmFiNzk4NDcifSwic3Via2V5Ijp7
+-ImtpZCI6IjAxMjEzNzlkNTM3MGFlYjRlOWY3YWE0YjUyNzBmNWU0ODgwODVhNjQ3ZTBkYjI0Nzdl
+-ZGQzZjNjNTBlM2QxNGY0MDRmMGEiLCJwYXJlbnRfa2lkIjoiMDEyMDczZTk3MmQ1MjdmYmI0Mjhh
+-NTY5YmU5ZjUwOTVjMzZmMjI4YTQ1YjJlYjI2YzIzMTQ1MWQ1NTE4YTM3Y2E0MjMwYSJ9LCJ0eXBl
+-Ijoic3Via2V5IiwidmVyc2lvbiI6MX0sImNsaWVudCI6eyJuYW1lIjoia2V5YmFzZS5pbyBnbyBj
+-bGllbnQiLCJ2ZXJzaW9uIjoiMS4wLjAifSwiY3RpbWUiOjE0NDM0NjU5NDMsImV4cGlyZV9pbiI6
+-NTA0NTc2MDAwLCJtZXJrbGVfcm9vdCI6eyJjdGltZSI6MTQ0MzQ2NTk0MywiaGFzaCI6IjhlYjMz
+-YjA2YzFlMDIyMWFjYmFjZTMwNmQyM2VhMWQ5MjJiYWFhY2M2YWJiZDI3YzM5Y2Y2M2JjYzI2NzM0
+-ZWY0ODUwY2Y4NzZhZmU2OTE1Nzg0OTg0MTNlMmU5NzQzYjc5Yjk3YmUxNjFlYzA4ZGI0Y2YyOTZi
+-ZDVlOThiNWZlIiwic2Vxbm8iOjU2M30sInByZXYiOiJlZTAwNzg1ODI0NmFkZjg4NTU5NzY2ZjE2
+-NGQwYjE5NTMwMzIwOWNiZDgyYWZhN2ZjNmRlZDE4YjQ5YjdiNmIyIiwic2Vxbm8iOjQsInRhZyI6
+-InNpZ25hdHVyZSJ9o3NpZ8RAbe4i3mDpfo1ECOcd0XU1JE7lRgkPUHQq7WLEEh5LbO5IAZHSm2zY
+-tuX4LPcEa+72KyrsweuAJravU8SjgL/gAKhzaWdfdHlwZSCjdGFnzQICp3ZlcnNpb24B
+-`)
+-	require.IsType(t, err, kbcrypto.FishyMsgpackError{}, "info=%+v, err+%+v", info, err)
+-}
+-
+-// Guard against unexpected codec encoding changes, in particular for
+-// ints.
+-func TestHardcodedPacketEncode(t *testing.T) {
+-	var info kbcrypto.NaclSigInfo
+-	p, err := kbcrypto.NewKeybasePacket(&info)
+-	require.NoError(t, err)
+-
+-	p.Hash = nil
+-
+-	bytes, err := p.Encode()
+-	require.NoError(t, err)
+-	// In particular, {0xcd, 0x2, 0x2} shouldn't change to
+-	// {0xd1, 0x2, 0x2}.
+-	expectedBytes := []byte{0x83, 0xa4, 0x62, 0x6f, 0x64, 0x79, 0xc0, 0xa3, 0x74, 0x61, 0x67, 0xcd, 0x2, 0x2, 0xa7, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x1}
+-	require.Equal(t, expectedBytes, bytes)
+-}
+-
+ // This is a regression test for
+ // https://github.com/ugorji/go/issues/237 .
+ func TestMsgpackReencodeNilHash(t *testing.T) {
+
+From 78cae39abe964587647e96a203c1656d940a3ee6 Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Thu, 30 Aug 2018 00:30:06 -0700
+Subject: [PATCH 11/12] Unexport
+
+---
+ go/kbcrypto/kbpackets.go | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/go/kbcrypto/kbpackets.go b/go/kbcrypto/kbpackets.go
+index 956cb5e1f61..2bc76e793e6 100644
+--- a/go/kbcrypto/kbpackets.go
++++ b/go/kbcrypto/kbpackets.go
+@@ -86,7 +86,7 @@ func (u UnmarshalError) Error() string {
+ func DecodePacket(decoder *codec.Decoder, body Packetable) error {
+ 	// TODO: Do something with the version too?
+ 	tag, _ := body.GetTagAndVersion()
+-	p := KeybasePacket{
++	p := keybasePacket{
+ 		Body: body,
+ 	}
+ 	err := decoder.Decode(&p)
+@@ -110,7 +110,7 @@ func DecodePacketFromBytes(data []byte, body Packetable) error {
+ 
+ 	// TODO: Do something with the version too?
+ 	tag, _ := body.GetTagAndVersion()
+-	p := KeybasePacket{
++	p := keybasePacket{
+ 		Body: body,
+ 	}
+ 	err := decoder.Decode(&p)
+@@ -159,25 +159,25 @@ func CodecHandle() *codec.MsgpackHandle {
+ 
+ const SHA256Code = 8
+ 
+-type KeybasePacketHash struct {
++type keybasePacketHash struct {
+ 	Type  int    `codec:"type"`
+ 	Value []byte `codec:"value"`
+ }
+ 
+-type KeybasePacket struct {
++type keybasePacket struct {
+ 	Body    Packetable         `codec:"body"`
+-	Hash    *KeybasePacketHash `codec:"hash,omitempty"`
++	Hash    *keybasePacketHash `codec:"hash,omitempty"`
+ 	Tag     PacketTag          `codec:"tag"`
+ 	Version PacketVersion      `codec:"version"`
+ }
+ 
+-func newKeybasePacket(body Packetable) (*KeybasePacket, error) {
++func newKeybasePacket(body Packetable) (*keybasePacket, error) {
+ 	tag, version := body.GetTagAndVersion()
+-	ret := KeybasePacket{
++	ret := keybasePacket{
+ 		Body:    body,
+ 		Tag:     tag,
+ 		Version: version,
+-		Hash: &KeybasePacketHash{
++		Hash: &keybasePacketHash{
+ 			Type:  SHA256Code,
+ 			Value: []byte{},
+ 		},
+@@ -191,20 +191,20 @@ func newKeybasePacket(body Packetable) (*KeybasePacket, error) {
+ 	return &ret, nil
+ }
+ 
+-func (p *KeybasePacket) hashToBytes() ([]byte, error) {
++func (p *keybasePacket) hashToBytes() ([]byte, error) {
+ 	// We don't include the Hash field in the encoded bytes that we hash,
+ 	// because if we did then the result wouldn't be stable. To work around
+ 	// that, we make a copy of the packet and overwrite the Hash field with
+ 	// an empty slice.
+ 	packetCopy := *p
+-	packetCopy.Hash = &KeybasePacketHash{
++	packetCopy.Hash = &keybasePacketHash{
+ 		Type:  SHA256Code,
+ 		Value: []byte{},
+ 	}
+ 	return packetCopy.hashSum()
+ }
+ 
+-func (p *KeybasePacket) hashSum() ([]byte, error) {
++func (p *keybasePacket) hashSum() ([]byte, error) {
+ 	if len(p.Hash.Value) != 0 {
+ 		return nil, errors.New("cannot compute hash with Value present")
+ 	}
+@@ -216,7 +216,7 @@ func (p *KeybasePacket) hashSum() ([]byte, error) {
+ 	return ret[:], nil
+ }
+ 
+-func (p *KeybasePacket) checkHash() error {
++func (p *keybasePacket) checkHash() error {
+ 	var gotten []byte
+ 	var err error
+ 	if p.Hash == nil {
+@@ -233,13 +233,13 @@ func (p *KeybasePacket) checkHash() error {
+ 	return err
+ }
+ 
+-func (p *KeybasePacket) encode() ([]byte, error) {
++func (p *keybasePacket) encode() ([]byte, error) {
+ 	var encoded []byte
+ 	err := codec.NewEncoderBytes(&encoded, CodecHandle()).Encode(p)
+ 	return encoded, err
+ }
+ 
+-func (p *KeybasePacket) armoredEncode() (ret string, err error) {
++func (p *keybasePacket) armoredEncode() (ret string, err error) {
+ 	var buf bytes.Buffer
+ 	b64 := base64.NewEncoder(base64.StdEncoding, &buf)
+ 	defer b64.Close()
+@@ -250,7 +250,7 @@ func (p *KeybasePacket) armoredEncode() (ret string, err error) {
+ 	return
+ }
+ 
+-func (p *KeybasePacket) encodeTo(w io.Writer) error {
++func (p *keybasePacket) encodeTo(w io.Writer) error {
+ 	err := codec.NewEncoder(w, CodecHandle()).Encode(p)
+ 	return err
+ }
+
+From b4c787ff23f8731acc9df865fce347d8551d9d2c Mon Sep 17 00:00:00 2001
+From: Frederick Akalin <akalin@keyba.se>
+Date: Thu, 30 Aug 2018 00:30:50 -0700
+Subject: [PATCH 12/12] Fix
+
+---
+ go/kbcrypto/kbpackets_test.go | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/go/kbcrypto/kbpackets_test.go b/go/kbcrypto/kbpackets_test.go
+index 23db3669e93..d9b060c937c 100644
+--- a/go/kbcrypto/kbpackets_test.go
++++ b/go/kbcrypto/kbpackets_test.go
+@@ -6,13 +6,12 @@ package kbcrypto
+ import (
+ 	"testing"
+ 
+-	"github.com/keybase/client/go/kbcrypto"
+ 	"github.com/stretchr/testify/require"
+ )
+ 
+ func TestFishyMsgpack(t *testing.T) {
+ 	// This message has a duplicate key ("detached") in the top-level map
+-	info, err := kbcrypto.DecodeArmoredNaclSigInfoPacket(`
++	info, err := DecodeArmoredNaclSigInfoPacket(`
+ hKRib2R5hqhkZXRhY2hlZMOoZGV0YWNoZWTCqWhhc2hfdHlwZQqja2V5xCMBIHPpctUn+7QopWm+
+ n1CVw28iikWy6ybCMUUdVRijfKQjCqdwYXlsb2FkxQPteyJib2R5Ijp7ImRldmljZSI6eyJpZCI6
+ IjA1Nzg0M2MyMDI1MTkyNmFjYzBkNWRiMzEyNjk3OTE4Iiwia2lkIjoiMDEyMTM3OWQ1MzcwYWVi
+@@ -35,7 +34,7 @@ NGQwYjE5NTMwMzIwOWNiZDgyYWZhN2ZjNmRlZDE4YjQ5YjdiNmIyIiwic2Vxbm8iOjQsInRhZyI6
+ InNpZ25hdHVyZSJ9o3NpZ8RAbe4i3mDpfo1ECOcd0XU1JE7lRgkPUHQq7WLEEh5LbO5IAZHSm2zY
+ tuX4LPcEa+72KyrsweuAJravU8SjgL/gAKhzaWdfdHlwZSCjdGFnzQICp3ZlcnNpb24B
+ `)
+-	require.IsType(t, err, kbcrypto.FishyMsgpackError{}, "info=%+v, err+%+v", info, err)
++	require.IsType(t, err, FishyMsgpackError{}, "info=%+v, err+%+v", info, err)
+ }
+ 
+ // Guard against unexpected codec encoding changes, in particular for
