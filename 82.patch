@@ -1,0 +1,43 @@
+From a79c8fea7b526d27f4448526bec3dc0a5663c555 Mon Sep 17 00:00:00 2001
+From: "dependabot[bot]" <support@dependabot.com>
+Date: Thu, 30 Aug 2018 05:59:57 +0000
+Subject: [PATCH] Bump dependabot-core from v0.69.2 to v0.69.4
+
+Bumps [dependabot-core](https://github.com/dependabot/dependabot-core) from v0.69.2 to v0.69.4.
+- [Release notes](https://github.com/dependabot/dependabot-core/releases)
+- [Changelog](https://github.com/dependabot/dependabot-core/blob/master/CHANGELOG.md)
+- [Commits](https://github.com/dependabot/dependabot-core/compare/ea752f838cba943f69dbd9182b30cecb69e3a2a1...cdcef33af95283d4e7a461b5492042b463c848f9)
+
+Signed-off-by: dependabot[bot] <support@dependabot.com>
+---
+ Gemfile      | 2 +-
+ Gemfile.lock | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Gemfile b/Gemfile
+index 6632fd6..31cadcb 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -5,4 +5,4 @@ source "https://rubygems.org"
+ 
+ gem "dependabot-core",
+     git: "https://github.com/dependabot/dependabot-core",
+-    tag: "v0.69.2"
++    tag: "v0.69.4"
+diff --git a/Gemfile.lock b/Gemfile.lock
+index a3a16da..069a445 100644
+--- a/Gemfile.lock
++++ b/Gemfile.lock
+@@ -1,9 +1,9 @@
+ GIT
+   remote: https://github.com/dependabot/dependabot-core
+-  revision: ea752f838cba943f69dbd9182b30cecb69e3a2a1
+-  tag: v0.69.2
++  revision: cdcef33af95283d4e7a461b5492042b463c848f9
++  tag: v0.69.4
+   specs:
+-    dependabot-core (0.69.2)
++    dependabot-core (0.69.4)
+       bundler (~> 1.16)
+       docker_registry2 (~> 1.3, >= 1.3.3)
+       excon (~> 0.55)

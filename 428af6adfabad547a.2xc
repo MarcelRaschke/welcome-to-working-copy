@@ -1,0 +1,88 @@
+<TuxSettings>
+ <Desktops>
+  <D0000>
+   <Alias dt:dt="string">xyz</Alias>
+   <Conn0000>
+    <Mode dt:dt="ui4">0</Mode>
+    <Server dt:dt="string">localhost</Server>
+    <ServerPort dt:dt="ui4">3389</ServerPort>
+   </Conn0000>
+   <AudioMode dt:dt="ui4">0</AudioMode>
+   <TSAuth dt:dt="ui4">2</TSAuth>
+   <VideoModeType/>
+   <Width dt:dt="ui4">2202</Width>
+   <Height dt:dt="ui4">1125</Height>
+   <ScaleFactor dt:dt="ui4">150</ScaleFactor>
+   <ColorDepth dt:dt="ui4">2</ColorDepth>
+   <GraphicsAcceleration dt:dt="ui4">2</GraphicsAcceleration>
+   <UseProxyServer dt:dt="ui4">1</UseProxyServer>
+   <DesktopBackground dt:dt="ui4">1</DesktopBackground>
+   <DesktopComposition dt:dt="ui4">1</DesktopComposition>
+   <FontSmoothing dt:dt="ui4">1</FontSmoothing>
+   <WindowMenuAnimation dt:dt="ui4">1</WindowMenuAnimation>
+   <ShowContent dt:dt="ui4">1</ShowContent>
+   <Themes dt:dt="ui4">1</Themes>
+   <NetType dt:dt="ui4">6</NetType>
+   <ID dt:dt="ui4">0</ID>
+  </D0000>
+  <D0001>
+   <Alias dt:dt="string">sendy.io</Alias>
+   <Conn0000>
+    <Mode dt:dt="ui4">0</Mode>
+    <Server dt:dt="string">sendy.io</Server>
+    <ServerPort dt:dt="ui4">3389</ServerPort>
+   </Conn0000>
+   <TSAuth dt:dt="ui4">2</TSAuth>
+   <Width dt:dt="ui4">1468</Width>
+   <Height dt:dt="ui4">750</Height>
+   <ScaleFactor dt:dt="ui4">100</ScaleFactor>
+   <ColorDepth dt:dt="ui4">2</ColorDepth>
+   <UseProxyServer dt:dt="ui4">1</UseProxyServer>
+   <ProxyType dt:dt="ui4">0</ProxyType>
+   <ProxyHost dt:dt="string">local</ProxyHost>
+   <ProxyPort dt:dt="ui4">0</ProxyPort>
+   <ProxyAuthentication dt:dt="ui4">0</ProxyAuthentication>
+   <ProxyUseLogonCredentials dt:dt="ui4">0</ProxyUseLogonCredentials>
+   <ProxyUsername dt:dt="string"/>
+   <DesktopBackground dt:dt="ui4">1</DesktopBackground>
+   <DesktopComposition dt:dt="ui4">1</DesktopComposition>
+   <FontSmoothing dt:dt="ui4">1</FontSmoothing>
+   <WindowMenuAnimation dt:dt="ui4">1</WindowMenuAnimation>
+   <ShowContent dt:dt="ui4">1</ShowContent>
+   <Themes dt:dt="ui4">1</Themes>
+   <NetType dt:dt="ui4">6</NetType>
+   <ID dt:dt="ui4">1</ID>
+  </D0001>
+ </Desktops>
+ <Farms>
+  <F0000>
+   <Alias dt:dt="string">localhost.gitz</Alias>
+   <Conn0000>
+    <Mode dt:dt="ui4">2</Mode>
+    <Server dt:dt="string">localhost.gitz</Server>
+    <ServerPort dt:dt="ui4">443</ServerPort>
+   </Conn0000>
+   <UserName dt:dt="string">marcel.raschke@me-on.ch</UserName>
+   <TSAuth dt:dt="ui4">0</TSAuth>
+   <Width dt:dt="ui4">1468</Width>
+   <Height dt:dt="ui4">750</Height>
+   <ScaleFactor dt:dt="ui4">100</ScaleFactor>
+   <ColorDepth dt:dt="ui4">2</ColorDepth>
+   <UseProxyServer dt:dt="ui4">1</UseProxyServer>
+   <ProxyType dt:dt="ui4">0</ProxyType>
+   <ProxyHost dt:dt="string">localhost.vpn</ProxyHost>
+   <ProxyPort dt:dt="ui4">0</ProxyPort>
+   <ProxyAuthentication dt:dt="ui4">0</ProxyAuthentication>
+   <ProxyUseLogonCredentials dt:dt="ui4">0</ProxyUseLogonCredentials>
+   <ProxyUsername dt:dt="string"/>
+   <DesktopBackground dt:dt="ui4">1</DesktopBackground>
+   <DesktopComposition dt:dt="ui4">1</DesktopComposition>
+   <FontSmoothing dt:dt="ui4">1</FontSmoothing>
+   <WindowMenuAnimation dt:dt="ui4">1</WindowMenuAnimation>
+   <ShowContent dt:dt="ui4">1</ShowContent>
+   <Themes dt:dt="ui4">1</Themes>
+   <NetType dt:dt="ui4">6</NetType>
+   <ID dt:dt="ui4">2</ID>
+  </F0000>
+ </Farms>
+</TuxSettings>
