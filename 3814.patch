@@ -1,0 +1,196 @@
+From 8075c104d20105cdae5434e5d808f827dd9f19de Mon Sep 17 00:00:00 2001
+From: Hyonho Lee <Hyonho.Lee@microsoft.com>
+Date: Wed, 5 Sep 2018 16:04:16 -0700
+Subject: [PATCH] Fix description for disk size
+
+---
+ .../preview/2016-04-30-preview/compute.json                 | 6 +++---
+ .../Microsoft.Compute/stable/2015-06-15/compute.json        | 4 ++--
+ .../Microsoft.Compute/stable/2016-03-30/compute.json        | 4 ++--
+ .../Microsoft.Compute/stable/2017-03-30/compute.json        | 6 +++---
+ .../Microsoft.Compute/stable/2017-12-01/compute.json        | 6 +++---
+ .../Microsoft.Compute/stable/2018-04-01/compute.json        | 4 ++--
+ .../Microsoft.Compute/stable/2018-06-01/compute.json        | 4 ++--
+ 7 files changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/specification/compute/resource-manager/Microsoft.Compute/preview/2016-04-30-preview/compute.json b/specification/compute/resource-manager/Microsoft.Compute/preview/2016-04-30-preview/compute.json
+index 025a106436..5dcb48484a 100644
+--- a/specification/compute/resource-manager/Microsoft.Compute/preview/2016-04-30-preview/compute.json
++++ b/specification/compute/resource-manager/Microsoft.Compute/preview/2016-04-30-preview/compute.json
+@@ -3976,7 +3976,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+@@ -4018,7 +4018,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+@@ -4906,7 +4906,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+diff --git a/specification/compute/resource-manager/Microsoft.Compute/stable/2015-06-15/compute.json b/specification/compute/resource-manager/Microsoft.Compute/stable/2015-06-15/compute.json
+index e2249648d6..aa7a60aabd 100644
+--- a/specification/compute/resource-manager/Microsoft.Compute/stable/2015-06-15/compute.json
++++ b/specification/compute/resource-manager/Microsoft.Compute/stable/2015-06-15/compute.json
+@@ -3451,7 +3451,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         }
+       },
+       "required": [
+@@ -3491,7 +3491,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         }
+       },
+       "required": [
+diff --git a/specification/compute/resource-manager/Microsoft.Compute/stable/2016-03-30/compute.json b/specification/compute/resource-manager/Microsoft.Compute/stable/2016-03-30/compute.json
+index 9467501936..38e1ffe205 100644
+--- a/specification/compute/resource-manager/Microsoft.Compute/stable/2016-03-30/compute.json
++++ b/specification/compute/resource-manager/Microsoft.Compute/stable/2016-03-30/compute.json
+@@ -3548,7 +3548,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         }
+       },
+       "required": [
+@@ -3588,7 +3588,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         }
+       },
+       "required": [
+diff --git a/specification/compute/resource-manager/Microsoft.Compute/stable/2017-03-30/compute.json b/specification/compute/resource-manager/Microsoft.Compute/stable/2017-03-30/compute.json
+index 766842d5d8..aa59d44c6a 100644
+--- a/specification/compute/resource-manager/Microsoft.Compute/stable/2017-03-30/compute.json
++++ b/specification/compute/resource-manager/Microsoft.Compute/stable/2017-03-30/compute.json
+@@ -4592,7 +4592,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+@@ -4634,7 +4634,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+@@ -5892,7 +5892,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+diff --git a/specification/compute/resource-manager/Microsoft.Compute/stable/2017-12-01/compute.json b/specification/compute/resource-manager/Microsoft.Compute/stable/2017-12-01/compute.json
+index bec608c38f..419af14281 100644
+--- a/specification/compute/resource-manager/Microsoft.Compute/stable/2017-12-01/compute.json
++++ b/specification/compute/resource-manager/Microsoft.Compute/stable/2017-12-01/compute.json
+@@ -5360,7 +5360,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+@@ -5406,7 +5406,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+@@ -6555,7 +6555,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+diff --git a/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json b/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
+index 32ce8d5a0c..38b96ac075 100644
+--- a/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
++++ b/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
+@@ -5189,7 +5189,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+@@ -5235,7 +5235,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+diff --git a/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json b/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
+index 9824830231..cb1e30bc5c 100644
+--- a/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
++++ b/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
+@@ -5234,7 +5234,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
+@@ -5280,7 +5280,7 @@
+         "diskSizeGB": {
+           "type": "integer",
+           "format": "int32",
+-          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the name of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
++          "description": "Specifies the size of an empty data disk in gigabytes. This element can be used to overwrite the size of the disk in a virtual machine image. <br><br> This value cannot be larger than 1023 GB"
+         },
+         "managedDisk": {
+           "description": "The managed disk parameters.",
