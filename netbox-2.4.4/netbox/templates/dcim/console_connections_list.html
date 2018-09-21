@@ -1,0 +1,20 @@
+{% extends '_base.html' %}
+{% load buttons %}
+
+{% block content %}
+<div class="pull-right">
+    {% if perms.dcim.change_consoleport %}
+        {% import_button 'dcim:console_connections_import' %}
+    {% endif %}
+    {% export_button content_type %}
+</div>
+<h1>{% block title %}Console Connections{% endblock %}</h1>
+<div class="row">
+	<div class="col-md-9">
+        {% include 'responsive_table.html' %}
+    </div>
+    <div class="col-md-3">
+		{% include 'inc/search_panel.html' %}
+    </div>
+</div>
+{% endblock %}

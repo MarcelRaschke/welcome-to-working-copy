@@ -1,0 +1,54 @@
+{% extends '_base.html' %}
+{% load helpers %}
+
+{% block content %}
+<div class="btn-group pull-right" role="group">
+    <a href="{% url 'dcim:rack_elevation_list' %}{% querystring request face=0 %}" class="btn btn-default{% if request.GET.face != '1' %} active{% endif %}">Front</a>
+    <a href="{% url 'dcim:rack_elevation_list' %}{% querystring request face=1 %}" class="btn btn-default{% if request.GET.face == '1' %} active{% endif %}">Rear</a>
+</div>
+<h1>{% block title %}Rack Elevations{% endblock %}</h1>
+<div class="row">
+    {% if page %}
+        <div class="col-md-9">
+            <div style="white-space: nowrap; overflow-x: scroll;">
+                {% for rack in page %}
+                    <div style="display: inline-block; width: 266px">
+                        <div class="rack_header">
+                            <strong><a href="{% url 'dcim:rack' pk=rack.pk %}">{{ rack.name|truncatechars:"25" }}</a></strong>
+                            <p><small class="text-muted">{{ rack.facility_id|truncatechars:"30" }}</small></p>
+                        </div>
+                        {% if face_id %}
+                            {% include 'dcim/inc/rack_elevation.html' with primary_face=rack.get_rear_elevation secondary_face=rack.get_front_elevation face_id=1 reserved_units=rack.get_reserved_units %}
+                        {% else %}
+                            {% include 'dcim/inc/rack_elevation.html' with primary_face=rack.get_front_elevation secondary_face=rack.get_rear_elevation face_id=0 reserved_units=rack.get_reserved_units %}
+                        {% endif %}
+                        <div class="clearfix"></div>
+                        <div class="rack_header">
+                            <strong><a href="{% url 'dcim:rack' pk=rack.pk %}">{{ rack.name|truncatechars:"25" }}</a></strong>
+                            <p><small class="text-muted">{{ rack.facility_id|truncatechars:"30" }}</small></p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <br />
+            {% include 'inc/paginator.html' %}
+        </div>
+    {% else %}
+        <div class="col-md-9">
+            <p>No racks found</p>
+        </div>
+    {% endif %}
+    <div class="col-md-3">
+		{% include 'inc/search_panel.html' %}
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+    {% include 'dcim/inc/filter_rack_group.html' %}
+    <script type="text/javascript">
+    $(function() {
+        $('[data-toggle="popover"]').popover()
+    })
+    </script>
+{% endblock %}

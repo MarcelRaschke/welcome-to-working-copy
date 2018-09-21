@@ -1,0 +1,162 @@
+{% extends '_base.html' %}
+{% load helpers %}
+
+{% block header %}
+    <div class="row">
+        <div class="col-sm-8 col-md-9">
+            <ol class="breadcrumb">
+                <li><a href="{% url 'ipam:ipaddress_list' %}">IP Addresses</a></li>
+                {% if ipaddress.vrf %}
+                    <li><a href="{% url 'ipam:vrf' pk=ipaddress.vrf.pk %}">{{ ipaddress.vrf }}</a></li>
+                {% endif %}
+                <li>{{ ipaddress }}</li>
+            </ol>
+        </div>
+        <div class="col-sm-4 col-md-3">
+            <form action="{% url 'ipam:ipaddress_list' %}" method="get">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search IPs" />
+                    <span class="input-group-btn">
+                        <button type="submit" class="btn btn-primary">
+                            <span class="fa fa-search" aria-hidden="true"></span>
+                        </button>
+                    </span>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="pull-right">
+        {% if perms.ipam.change_ipaddress %}
+            <a href="{% url 'ipam:ipaddress_edit' pk=ipaddress.pk %}" class="btn btn-warning">
+                <span class="fa fa-pencil" aria-hidden="true"></span>
+                Edit this IP
+            </a>
+        {% endif %}
+        {% if perms.ipam.delete_ipaddress %}
+            <a href="{% url 'ipam:ipaddress_delete' pk=ipaddress.pk %}" class="btn btn-danger">
+                <span class="fa fa-trash" aria-hidden="true"></span>
+                Delete this IP
+            </a>
+        {% endif %}
+    </div>
+    <h1>{% block title %}{{ ipaddress }}{% endblock %}</h1>
+    {% include 'inc/created_updated.html' with obj=ipaddress %}
+    <ul class="nav nav-tabs">
+        <li role="presentation"{% if not active_tab %} class="active"{% endif %}>
+            <a href="{{ ipaddress.get_absolute_url }}">IP Address</a>
+        </li>
+        <li role="presentation"{% if active_tab == 'changelog' %} class="active"{% endif %}>
+            <a href="{% url 'ipam:ipaddress_changelog' pk=ipaddress.pk %}">Changelog</a>
+        </li>
+    </ul>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+	<div class="col-md-4">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <strong>IP Address</strong>
+            </div>
+            <table class="table table-hover panel-body attr-table">
+                <tr>
+                    <td>Family</td>
+                    <td>{{ ipaddress.get_family_display }}</td>
+                </tr>
+                <tr>
+                    <td>VRF</td>
+                    <td>
+                        {% if ipaddress.vrf %}
+                            <a href="{% url 'ipam:vrf' pk=ipaddress.vrf.pk %}">{{ ipaddress.vrf }}</a> ({{ ipaddress.vrf.rd }})
+                        {% else %}
+                            <span>Global</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Tenant</td>
+                    <td>
+                        {% if ipaddress.tenant %}
+                            {% if ipaddress.tenant.group %}
+                                <a href="{{ ipaddress.tenant.group.get_absolute_url }}">{{ ipaddress.tenant.group }}</a>
+                                <i class="fa fa-angle-right"></i>
+                            {% endif %}
+                            <a href="{{ ipaddress.tenant.get_absolute_url }}">{{ ipaddress.tenant }}</a>
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Status</td>
+                    <td>
+                        <span class="label label-{{ ipaddress.get_status_class }}">{{ ipaddress.get_status_display }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Role</td>
+                    <td>
+                        {% if ipaddress.role %}
+                            <a href="{% url 'ipam:ipaddress_list' %}?role={{ ipaddress.role }}">{{ ipaddress.get_role_display }}</a>
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Description</td>
+                    <td>
+                        {% if ipaddress.description %}
+                            <span>{{ ipaddress.description }}</span>
+                        {% else %}
+                            <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Assignment</td>
+                    <td>
+                        {% if ipaddress.interface %}
+                            <span><a href="{{ ipaddress.interface.parent.get_absolute_url }}">{{ ipaddress.interface.parent }}</a> ({{ ipaddress.interface }})</span>
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>NAT (inside)</td>
+                    <td>
+                        {% if ipaddress.nat_inside %}
+                            <a href="{% url 'ipam:ipaddress' pk=ipaddress.nat_inside.pk %}">{{ ipaddress.nat_inside }}</a>
+                            {% if ipaddress.nat_inside.interface %}
+                                (<a href="{{ ipaddress.nat_inside.interface.parent.get_absolute_url }}">{{ ipaddress.nat_inside.interface.parent }}</a>)
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>NAT (outside)</td>
+                    <td>
+                        {% if ipaddress.nat_outside %}
+                            <a href="{% url 'ipam:ipaddress' pk=ipaddress.nat_outside.pk %}">{{ ipaddress.nat_outside }}</a>
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        {% include 'inc/custom_fields_panel.html' with obj=ipaddress %}
+        {% include 'extras/inc/tags_panel.html' with tags=ipaddress.tags.all url='ipam:ipaddress_list' %}
+	</div>
+	<div class="col-md-8">
+        {% include 'panel_table.html' with table=parent_prefixes_table heading='Parent Prefixes' %}
+        {% if duplicate_ips_table.rows %}
+            {% include 'panel_table.html' with table=duplicate_ips_table heading='Duplicate IP Addresses' panel_class='danger' %}
+        {% endif %}
+        {% include 'panel_table.html' with table=related_ips_table heading='Related IP Addresses' panel_class='default' %}
+	</div>
+</div>
+{% endblock %}
