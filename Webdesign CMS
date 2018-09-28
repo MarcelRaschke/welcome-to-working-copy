@@ -1,0 +1,409 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN"
+  "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" version="XHTML+RDFa 1.0" dir="ltr"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:dc="http://purl.org/dc/terms/"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns:og="http://ogp.me/ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:sioc="http://rdfs.org/sioc/ns#"
+  xmlns:sioct="http://rdfs.org/sioc/types#"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+<head profile="http://www.w3.org/1999/xhtml/vocab">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="Generator" content="Drupal 7 (http://drupal.org)" />
+<link rel="shortcut icon" href="http://www.tanzwerk101.ch/sites/default/files/favicon_1.ico" type="image/vnd.microsoft.icon" />
+  <title>tanzwerk101.ch</title>
+  <style type="text/css" media="all">
+@import url("http://www.tanzwerk101.ch/modules/system/system.base.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/modules/system/system.menus.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/modules/system/system.messages.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/modules/system/system.theme.css?pbfx3j");
+</style>
+<style type="text/css" media="all">
+@import url("http://www.tanzwerk101.ch/sites/all/modules/calendar/css/calendar_multiday.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/colorbox_node/colorbox_node.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/date/date_api/date.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/date/date_popup/themes/datepicker.1.7.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/date/date_repeat_field/date_repeat_field.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/modules/field/theme/field.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/modules/node/node.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/modules/search/search.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/modules/user/user.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/views/css/views.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/ckeditor/css/ckeditor.css?pbfx3j");
+</style>
+<style type="text/css" media="all">
+@import url("http://www.tanzwerk101.ch/sites/all/modules/colorbox/styles/default/colorbox_style.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/ctools/css/ctools.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/jquerymenu/jquerymenu.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/lightbox2/css/lightbox.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/default/files/css/menu_icons.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/popup_message/styles/black/popup.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/jcarousel/skins/default/jcarousel-default.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/modules/search_api_autocomplete/search_api_autocomplete.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/libraries/superfish/css/superfish.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/libraries/superfish/style/simple/simple.css?pbfx3j");
+</style>
+<style type="text/css" media="all">
+@import url("http://www.tanzwerk101.ch/sites/all/themes/hf/tanzwerk101/calendar.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/themes/hf/tanzwerk101/../style.css?pbfx3j");
+@import url("http://www.tanzwerk101.ch/sites/all/themes/hf/tanzwerk101/style101.css?pbfx3j");
+</style>
+  <script type="text/javascript" src="http://www.tanzwerk101.ch/misc/jquery.js?v=1.4.4"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/misc/jquery.once.js?v=1.2"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/misc/drupal.js?pbfx3j"></script>
+<script type="text/javascript">
+<!--//--><![CDATA[//><!--
+(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/de_DE/all.js#xfbml=1&appId=480708628618438";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, "script", "facebook-jssdk"));
+//--><!]]>
+</script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/misc/ajax.js?v=7.59"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/default/files/languages/de_BuaT5PhryyOBSPSmi3t9X5fwesudyM4ZFLbsGYWGeUk.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/libraries/colorbox/jquery.colorbox-min.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/colorbox/js/colorbox.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/colorbox/styles/default/colorbox_style.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/colorbox/js/colorbox_load.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/colorbox/js/colorbox_inline.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/jquerymenu/jquerymenu.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/lightbox2/js/lightbox.js?1538155900"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/misc/jquery.cookie.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/popup_message/js/popup.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/jcarousel/js/jquery.jcarousel.min.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/jcarousel/js/jcarousel.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/google_analytics/googleanalytics.js?pbfx3j"></script>
+<script type="text/javascript">
+<!--//--><![CDATA[//><!--
+(function(i,s,o,g,r,a,m){i["GoogleAnalyticsObject"]=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,"script","//www.google-analytics.com/analytics.js","ga");ga("create", "UA-6268133-7", {"cookieDomain":"auto"});ga("send", "pageview");
+//--><!]]>
+</script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/better_exposed_filters/better_exposed_filters.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/misc/autocomplete.js?v=7.59"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/search_api_autocomplete/search_api_autocomplete.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/misc/progress.js?v=7.59"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/colorbox_node/colorbox_node.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/libraries/superfish/jquery.hoverIntent.minified.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/libraries/superfish/sfsmallscreen.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/libraries/superfish/supposition.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/libraries/superfish/superfish.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/libraries/superfish/supersubs.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/modules/superfish/superfish.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/themes/hf/tanzwerk101/jquery.mousewheel.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/themes/hf/tanzwerk101/jquery.jscrollpane.min.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/themes/hf/js/jquery.cookie.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/themes/hf/js/jquery.hoverIntent.minified.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/themes/hf/js/jquery.dcjqaccordion.2.7.min.js?pbfx3j"></script>
+<script type="text/javascript" src="http://www.tanzwerk101.ch/sites/all/themes/hf/script.js?pbfx3j"></script>
+<script type="text/javascript">
+<!--//--><![CDATA[//><!--
+jQuery.extend(Drupal.settings, {"basePath":"\/","pathPrefix":"de\/","ajaxPageState":{"theme":"tanzwerk101","theme_token":"6eNQyU01yiqHx7S9G-L1uXqdv34Za20e4A7KBwPog1Y","js":{"misc\/jquery.js":1,"misc\/jquery.once.js":1,"misc\/drupal.js":1,"0":1,"misc\/ajax.js":1,"public:\/\/languages\/de_BuaT5PhryyOBSPSmi3t9X5fwesudyM4ZFLbsGYWGeUk.js":1,"sites\/all\/libraries\/colorbox\/jquery.colorbox-min.js":1,"sites\/all\/modules\/colorbox\/js\/colorbox.js":1,"sites\/all\/modules\/colorbox\/styles\/default\/colorbox_style.js":1,"sites\/all\/modules\/colorbox\/js\/colorbox_load.js":1,"sites\/all\/modules\/colorbox\/js\/colorbox_inline.js":1,"sites\/all\/modules\/jquerymenu\/jquerymenu.js":1,"sites\/all\/modules\/lightbox2\/js\/lightbox.js":1,"misc\/jquery.cookie.js":1,"sites\/all\/modules\/popup_message\/js\/popup.js":1,"sites\/all\/modules\/jcarousel\/js\/jquery.jcarousel.min.js":1,"sites\/all\/modules\/jcarousel\/js\/jcarousel.js":1,"sites\/all\/modules\/google_analytics\/googleanalytics.js":1,"1":1,"sites\/all\/modules\/better_exposed_filters\/better_exposed_filters.js":1,"misc\/autocomplete.js":1,"sites\/all\/modules\/search_api_autocomplete\/search_api_autocomplete.js":1,"misc\/progress.js":1,"sites\/all\/modules\/colorbox_node\/colorbox_node.js":1,"sites\/all\/libraries\/superfish\/jquery.hoverIntent.minified.js":1,"sites\/all\/libraries\/superfish\/sfsmallscreen.js":1,"sites\/all\/libraries\/superfish\/supposition.js":1,"sites\/all\/libraries\/superfish\/superfish.js":1,"sites\/all\/libraries\/superfish\/supersubs.js":1,"sites\/all\/modules\/superfish\/superfish.js":1,"sites\/all\/themes\/hf\/tanzwerk101\/jquery.mousewheel.js":1,"sites\/all\/themes\/hf\/tanzwerk101\/jquery.jscrollpane.min.js":1,"sites\/all\/themes\/hf\/js\/jquery.cookie.js":1,"sites\/all\/themes\/hf\/js\/jquery.hoverIntent.minified.js":1,"sites\/all\/themes\/hf\/js\/jquery.dcjqaccordion.2.7.min.js":1,"sites\/all\/themes\/hf\/script.js":1},"css":{"modules\/system\/system.base.css":1,"modules\/system\/system.menus.css":1,"modules\/system\/system.messages.css":1,"modules\/system\/system.theme.css":1,"sites\/all\/modules\/calendar\/css\/calendar_multiday.css":1,"sites\/all\/modules\/colorbox_node\/colorbox_node.css":1,"sites\/all\/modules\/date\/date_api\/date.css":1,"sites\/all\/modules\/date\/date_popup\/themes\/datepicker.1.7.css":1,"sites\/all\/modules\/date\/date_repeat_field\/date_repeat_field.css":1,"modules\/field\/theme\/field.css":1,"modules\/node\/node.css":1,"modules\/search\/search.css":1,"modules\/user\/user.css":1,"sites\/all\/modules\/views\/css\/views.css":1,"sites\/all\/modules\/ckeditor\/css\/ckeditor.css":1,"sites\/all\/modules\/colorbox\/styles\/default\/colorbox_style.css":1,"sites\/all\/modules\/ctools\/css\/ctools.css":1,"sites\/all\/modules\/jquerymenu\/jquerymenu.css":1,"sites\/all\/modules\/lightbox2\/css\/lightbox.css":1,"public:\/\/css\/menu_icons.css":1,"sites\/all\/modules\/popup_message\/styles\/black\/popup.css":1,"sites\/all\/modules\/jcarousel\/skins\/default\/jcarousel-default.css":1,"sites\/all\/modules\/search_api_autocomplete\/search_api_autocomplete.css":1,"sites\/all\/libraries\/superfish\/css\/superfish.css":1,"sites\/all\/libraries\/superfish\/style\/simple\/simple.css":1,"sites\/all\/themes\/hf\/tanzwerk101\/calendar.css":1,"sites\/all\/themes\/hf\/style.css":1,"sites\/all\/themes\/hf\/tanzwerk101\/..\/style.css":1,"sites\/all\/themes\/hf\/tanzwerk101\/style101.css":1}},"colorbox":{"transition":"elastic","speed":"100","opacity":"0.75","slideshow":false,"slideshowAuto":true,"slideshowSpeed":"2500","slideshowStart":"start slideshow","slideshowStop":"stop slideshow","current":"{current} of {total}","previous":"\u00ab Prev","next":"Next \u00bb","close":"Close","overlayClose":true,"maxWidth":"98%","maxHeight":"98%","initialWidth":"300","initialHeight":"250","fixed":true,"scrolling":false,"mobiledetect":true,"mobiledevicewidth":"480px"},"jcarousel":{"ajaxPath":"\/de\/jcarousel\/ajax\/views","carousels":{"jcarousel-dom-1":{"view_options":{"view_args":"","view_path":"home","view_base_path":"home","view_display_id":"page","view_name":"startseite","jcarousel_dom_id":1},"wrap":"circular","skin":"default","scroll":1,"auto":3,"autoPause":1,"start":1,"vertical":1,"row_class":"contextual-links-region","selector":".jcarousel-dom-1"}}},"jquerymenu":{"hover":0,"animate":1,"edit_link":1,"click_to_expand":0},"lightbox2":{"rtl":"0","file_path":"\/(\\w\\w\/)public:\/","default_image":"\/sites\/all\/modules\/lightbox2\/images\/brokenimage.jpg","border_size":10,"font_color":"000","box_color":"fff","top_position":"","overlay_opacity":"0.8","overlay_color":"000","disable_close_click":1,"resize_sequence":0,"resize_speed":400,"fade_in_speed":600,"slide_down_speed":600,"use_alt_layout":0,"disable_resize":1,"disable_zoom":1,"force_show_nav":0,"show_caption":1,"loop_items":0,"node_link_text":"View Image Details","node_link_target":0,"image_count":"Image !current of !total","video_count":"Video !current of !total","page_count":"Page !current of !total","lite_press_x_close":"\u003Ca href=\u0022#\u0022 onclick=\u0022hideLightbox(); return FALSE;\u0022\u003E\u003Ckbd\u003Ex\u003C\/kbd\u003E\u003C\/a\u003E zum Schlie\u00dfen dr\u00fccken","download_link_text":"","enable_login":false,"enable_contact":false,"keys_close":"c x 27","keys_previous":"p 37","keys_next":"n 39","keys_zoom":"z","keys_play_pause":"32","display_image_size":"original","image_node_sizes":"()","trigger_lightbox_classes":"","trigger_lightbox_group_classes":"","trigger_slideshow_classes":"","trigger_lightframe_classes":"","trigger_lightframe_group_classes":"","custom_class_handler":0,"custom_trigger_classes":"","disable_for_gallery_lists":true,"disable_for_acidfree_gallery_lists":true,"enable_acidfree_videos":true,"slideshow_interval":8000,"slideshow_automatic_start":0,"slideshow_automatic_exit":1,"show_play_pause":1,"pause_on_next_click":0,"pause_on_previous_click":1,"loop_slides":0,"iframe_width":600,"iframe_height":400,"iframe_border":1,"enable_video":0},"popup_message":{"title":"\u0026nbsp;","body":"\u003Cp\u003E\u003Cimg alt=\u0022\u0022 src=\u0022\/sites\/default\/files\/tanztag%20poster%20A0%20ONLINE_3.jpg\u0022 style=\u0022height: 707px; width: 500px;\u0022 \/\u003E\u200b\u003C\/p\u003E\n","check_cookie":"1","width":"550","height":"730","delay":"0"},"better_exposed_filters":{"views":{"startseite":{"displays":{"page":{"filters":[]}}},"hffrontnews2":{"displays":{"default":{"filters":[]}}},"hffrontnews3":{"displays":{"default":{"filters":[]}}}},"datepicker":false,"slider":false,"settings":[],"autosubmit":false},"googleanalytics":{"trackOutbound":1,"trackMailto":1,"trackDownload":1,"trackDownloadExtensions":"7z|aac|arc|arj|asf|asx|avi|bin|csv|doc(x|m)?|dot(x|m)?|exe|flv|gif|gz|gzip|hqx|jar|jpe?g|js|mp(2|3|4|e?g)|mov(ie)?|msi|msp|pdf|phps|png|ppt(x|m)?|pot(x|m)?|pps(x|m)?|ppam|sld(x|m)?|thmx|qtm?|ra(m|r)?|sea|sit|tar|tgz|torrent|txt|wav|wma|wmv|wpd|xls(x|m|b)?|xlt(x|m)|xlam|xml|z|zip","trackColorbox":1},"urlIsAjaxTrusted":{"\/de\/suche":true},"superfish":{"1":{"id":"1","sf":{"pathLevels":"2","animation":{"opacity":"show","height":"show"},"speed":"\u0027fast\u0027","autoArrows":true,"dropShadows":true,"disableHI":false},"plugins":{"smallscreen":{"mode":"window_width","addSelected":false,"menuClasses":false,"hyperlinkClasses":false,"title":"Main menu"},"supposition":true,"bgiframe":false,"supersubs":{"minWidth":"12","maxWidth":"27","extraWidth":1}}}}});
+//--><!]]>
+</script>
+</head>
+<body class="html front not-logged-in no-sidebars page-home i18n-de" >
+  <div id="skip-link">
+    <a href="#main-content" class="element-invisible element-focusable">Direkt zum Inhalt</a>
+  </div>
+    
+  <div id="header01">
+    <a href="http://www.klubschule.ch/de/Seiten/default.aspx" target="_blank" class="migros"><div id="migros_sentence">Die Tanzschule der</div><img src="/sites/all/themes/hf/tanzwerk101/images/migros.png" alt="Migros" /></a>
+    <a href="/de" title="Startseite" class="logo"><img src="/sites/all/themes/hf/tanzwerk101/images/logo.jpg" alt="Startseite" /></a>		<div id="headertopright">
+					</div>
+    	<form action="/de/suche" method="get" id="views-exposed-form-suchseite-page" accept-charset="UTF-8"><div><div class="views-exposed-form">
+  <div class="views-exposed-widgets clearfix">
+          <div id="edit-search-api-views-fulltext-wrapper" class="views-exposed-widget views-widget-filter-search_api_views_fulltext">
+                  <label for="edit-search-api-views-fulltext">
+                       </label>
+                        <div class="views-widget">
+          <div class="form-item form-type-textfield form-item-search-api-views-fulltext">
+ <input class="auto_submit form-text form-autocomplete" data-search-api-autocomplete-search="search_api_views_suchseite" type="text" id="edit-search-api-views-fulltext" name="search_api_views_fulltext" value="" size="30" maxlength="128" /><input type="hidden" id="edit-search-api-views-fulltext-autocomplete" value="http://www.tanzwerk101.ch/index.php?q=de/search_api_autocomplete/search_api_views_suchseite/-" disabled="disabled" class="autocomplete" />
+</div>
+        </div>
+              </div>
+                    <div class="views-exposed-widget views-submit-button">
+      <input type="submit" id="edit-submit-suchseite" name="" value="Suchen" class="form-submit" />    </div>
+      </div>
+</div>
+</div></form>  </div>
+  <div id="primary">
+    	    <div id="primaryInnerLeft"><div class="section">
+	        <div class="region region-main-menu">
+    <div id="block-superfish-1" class="block block-superfish">
+
+    
+  <div class="content">
+    <ul id="superfish-1" class="menu sf-menu sf-main-menu sf-horizontal sf-style-simple sf-total-items-8 sf-parent-items-8 sf-single-items-0"><li id="menu-483-1" class="first odd sf-item-1 sf-depth-1 sf-total-children-5 sf-parent-children-2 sf-single-children-3 menuparent"><a href="/de/content/willkommen" class="sf-depth-1 menuparent">Über uns</a><ul><li id="menu-485-1" class="first odd sf-item-1 sf-depth-2 sf-no-children"><a href="/de/content/willkommen" title="" class="sf-depth-2">Willkommen</a></li><li id="menu-734-1" class="middle even sf-item-2 sf-depth-2"><a href="/de/team" class="sf-depth-2">Team</a></li><li id="menu-1911-1" class="middle odd sf-item-3 sf-depth-2"><a href="/de/content/history" class="sf-depth-2">History</a></li><li id="menu-603-1" class="middle even sf-item-4 sf-depth-2 sf-no-children"><a href="/de/content/agb" class="sf-depth-2">AGB</a></li><li id="menu-487-1" class="last odd sf-item-5 sf-depth-2 sf-no-children"><a href="/de/content/tr%C3%A4gerschaft" class="sf-depth-2">Trägerschaft</a></li></ul></li><li id="menu-489-1" class="middle even sf-item-2 sf-depth-1 sf-total-children-5 sf-parent-children-3 sf-single-children-2 menuparent"><a href="/de/content/kurs-angebote" title="" class="sf-depth-1 menuparent">Kurse<br /><span class="smallmenu">(Kurs-Angebot)</span></a><ul><li id="menu-725-1" class="first odd sf-item-1 sf-depth-2"><a href="/de/content/einzeltanz" title="" class="sf-depth-2">Einzeltanz</a></li><li id="menu-726-1" class="middle even sf-item-2 sf-depth-2"><a href="/de/content/paartanz" title="" class="sf-depth-2">Paartanz</a></li><li id="menu-910-1" class="middle odd sf-item-3 sf-depth-2"><a href="/de/content/ballett-f%C3%BCr-kinder-0" title="" class="sf-depth-2">Kurse für Kinder und Jugendliche</a></li><li id="menu-1926-1" class="middle even sf-item-4 sf-depth-2 sf-no-children"><a href="/de/lehrer-kurs-angebot-1" title="" class="sf-depth-2">Lehrer (Kurs-Angebot)</a></li><li id="menu-602-1" class="last odd sf-item-5 sf-depth-2 sf-no-children"><a href="/de/content/events-social-dance" class="sf-depth-2">Events / Social Dance</a></li></ul></li><li id="menu-532-1" class="middle odd sf-item-3 sf-depth-1 sf-total-children-5 sf-parent-children-1 sf-single-children-4 menuparent"><a href="/de/content/stundenplan" class="sf-depth-1 menuparent">Lektionen<br /><span class="smallmenu">(Abo-Angebot)</span><br /><span class="smallmenu">(Open-Classes)</span></a><ul><li id="menu-769-1" class="first odd sf-item-1 sf-depth-2 sf-no-children"><a href="/de/content/stundenplan" class="sf-depth-2">Stundenplan</a></li><li id="menu-1927-1" class="middle even sf-item-2 sf-depth-2 sf-no-children"><a href="/de/lehrer-abo-angebot-2" title="" class="sf-depth-2">Lehrer (Abo-Angebot)</a></li><li id="menu-775-1" class="middle odd sf-item-3 sf-depth-2 sf-no-children"><a href="/de/calendar" title="" class="sf-depth-2">Agenda</a></li><li id="menu-604-1" class="middle even sf-item-4 sf-depth-2"><a href="/de/content/preise-und-abos" class="sf-depth-2">Preise und Abos</a></li><li id="menu-796-1" class="last odd sf-item-5 sf-depth-2 sf-no-children"><a href="/de/content/open-classes-und-cdp-ballett" class="sf-depth-2">Open Classes</a></li></ul></li><li id="menu-607-1" class="middle even sf-item-4 sf-depth-1 sf-total-children-5 sf-parent-children-2 sf-single-children-3 menuparent"><a href="/de/content/specials" class="sf-depth-1 menuparent">Events</a><ul><li id="menu-4600-1" class="first odd sf-item-1 sf-depth-2"><a href="/de/content/tag-der-offenen-tanzt%C3%BCr-2018" class="sf-depth-2">TAG DER OFFENEN TanzTÜR 2018</a></li><li id="menu-4604-1" class="middle even sf-item-2 sf-depth-2 sf-no-children"><a href="/de/content/x-mas-edition-2018" class="sf-depth-2">X-MAS EDITION 2018</a></li><li id="menu-1939-1" class="middle odd sf-item-3 sf-depth-2 sf-no-children"><a href="/de/content/dance-again-1" class="sf-depth-2">Dance Again</a></li><li id="menu-1938-1" class="middle even sf-item-4 sf-depth-2 sf-no-children"><a href="/de/content/th%C3%A9-dansant-5" class="sf-depth-2">Thé Dansant</a></li><li id="menu-1634-1" class="last odd sf-item-5 sf-depth-2"><a href="/de/content/archiv" class="sf-depth-2">Archiv</a></li></ul></li><li id="menu-614-1" class="middle odd sf-item-5 sf-depth-1 sf-total-children-4 sf-parent-children-1 sf-single-children-3 menuparent"><a href="/de/content/ausbildung" class="sf-depth-1 menuparent">Ausbildung</a><ul><li id="menu-615-1" class="first odd sf-item-1 sf-depth-2 sf-no-children"><a href="http://www.hf-buehnentanz.ch" title="" class="sf-depth-2">HF Bühnentanz</a></li><li id="menu-616-1" class="middle even sf-item-2 sf-depth-2 sf-no-children"><a href="http://www.grundausbildung-buehnentanz-ztts.ch/" title="" class="sf-depth-2">GRUNDAUSBILDUNG BÜHNENTANZ ZTTS</a></li><li id="menu-3466-1" class="middle odd sf-item-3 sf-depth-2"><a href="/de/content/k-s-junior-programm" class="sf-depth-2">K &amp; S Junior Programm</a></li><li id="menu-4063-1" class="last even sf-item-4 sf-depth-2 sf-no-children"><a href="/de/content/t%C3%A4nzerische-ausbildung-mit-eidgen%C3%B6ssisch-anerkanntem-kv-abschluss" class="sf-depth-2">Tänzerische Ausbildung mit eidgenössisch anerkanntem KV-Abschluss</a></li></ul></li><li id="menu-657-1" class="middle even sf-item-6 sf-depth-1 sf-total-children-3 sf-parent-children-1 sf-single-children-2 menuparent"><a href="/de/content/eventlocation-vermietung" class="menu_icon menu-657 sf-depth-1 menuparent">Location</a><ul><li id="menu-658-1" class="first odd sf-item-1 sf-depth-2 sf-no-children"><a href="/de/content/angebot-0" class="menu_icon menu-658 sf-depth-2">Angebot</a></li><li id="menu-659-1" class="middle even sf-item-2 sf-depth-2"><a href="/de/content/facts-figures-pl%C3%A4ne-0" class="menu_icon menu-659 sf-depth-2">Facts &amp; Figures / Pläne</a></li><li id="menu-824-1" class="last odd sf-item-3 sf-depth-2 sf-no-children"><a href="/de/content/bilder" class="menu_icon menu-824 sf-depth-2">Bilder</a></li></ul></li><li id="menu-664-1" class="middle odd sf-item-7 sf-depth-1 sf-total-children-2 sf-parent-children-2 sf-single-children-0 menuparent"><a href="/de/content/galerie" title="" class="sf-depth-1 menuparent">Galerie</a><ul><li id="menu-946-1" class="first odd sf-item-1 sf-depth-2"><a href="/de/content/fotos" class="sf-depth-2">Fotos</a></li><li id="menu-1245-1" class="last even sf-item-2 sf-depth-2"><a href="/de/content/videos" class="sf-depth-2">Videos</a></li></ul></li><li id="menu-541-1" class="last even sf-item-8 sf-depth-1 sf-total-children-2 sf-parent-children-0 sf-single-children-2 menuparent"><a href="/de/content/adresse-und-anfahrt" class="sf-depth-1 menuparent">Kontakt</a><ul><li id="menu-663-1" class="first odd sf-item-1 sf-depth-2 sf-no-children"><a href="/de/content/adresse-und-anfahrt" title="" class="sf-depth-2">Adresse und Anfahrt</a></li><li id="menu-1912-1" class="last even sf-item-2 sf-depth-2 sf-no-children"><a href="/de/content/%C3%B6ffnungszeiten" class="sf-depth-2">Öffnungszeiten</a></li></ul></li></ul>  </div>
+</div>
+  </div>
+	      	    </div></div> <!-- /.section, /#navigation -->
+	  		 <div id="primaryInnerRight">
+				<a href="http://www.tanzwerk101.ch/newsletter"><img src="/sites/all/themes/hf/tanzwerk101/images/nl.png"></a>
+				<a target="_blank" href="https://www.facebook.com/pages/Tanzwerk101/507395425995715"><img src="/sites/all/themes/hf/tanzwerk101/images/fb.png"></a>
+			
+	      	      <!--<a href="http://www.facebook.com/profile.php?id=100001921943681" class="fb" target="_blank"><img src="/sites/all/themes/hf/tanzwerk101/images/facebook.png" alt="facebook"/></a>-->
+	    </div>
+  </div>
+  <div id="wrapperOuter">
+    <div id="wrapperInner">
+      <div id="frontWrapperInner">
+        <div id="frontHeaderArea">
+          <div id="frontHeaderAreaVideo">
+					<!--<iframe width="582" height="327" src="http://www.tanzwerk101.ch/sites/all/themes/hf/tanzwerk101/TANZWERK_ONLINE_FINAL-QuickTime_H.264.mov&autoplay=1" frameborder="0" allowfullscreen></iframe>-->
+					<!--<iframe width="582" height="322" src="http://www.youtube.com/embed/-s9kaY_dQeM?autoplay=1&wmode=transparent" frameborder="0" allowfullscreen></iframe>-->
+					<!--<iframe src="https://player.vimeo.com/video/252442912?autoplay=0" width="582" height="322" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>-->
+					
+
+					<iframe src="https://player.vimeo.com/video/288230339?autoplay=1" width="582" height="329" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+					
+					<!--<iframe width="582" height="329" src="https://www.youtube.com/embed/0t9F3fMLVQA?wmode=transparent" frameborder="0" allowfullscreen></iframe>-->
+					<!--<iframe width="582" height="322" src="//www.youtube.com/embed/teqyUOTkCa8?autoplay=0&wmode=transparent" frameborder="0" allowfullscreen></iframe>-->
+
+          </div>
+          <div id="frontHeaderAreaNews1">  <div class="region region-content">
+    <div id="block-system-main" class="block block-system">
+
+    
+  <div class="content">
+    <div class="view view-startseite view-id-startseite view-display-id-page view-dom-id-399996d54262214c981c966ef71865a4">
+        
+  
+  
+      <div class="view-content">
+      <ul class="jcarousel jcarousel-view--startseite--page jcarousel-dom-1 jcarousel-skin-default">
+      <li class="j">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/Flyer%20A5%20OPEN%20CLASSES%20WEB_4.jpg?itok=OPMgzBTd" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>ÄNDERUNG OPEN CLASS BALLETT</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p>FREITAG 28.09.18, 10.30 mit NEEL JANSEN</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="c">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/04-09-_2018_10-49-10.png?itok=hUJHWYem" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>K&amp;S JUNIOR PROGRAMM</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p>NEU auch am SAMSTAG</p>
+<p><a href="http://www.tanzwerk101.ch/de/content/k-s-junior-programm" target="_blank"><strong><em>Hier </em></strong></a>findest du mehr Infos über das K&amp;S JUNIOR PROGRAMM.</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="a">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/x-mas%20edition%202018%20plakat%20A0%20ONLINE_0.jpg?itok=kQ5IFEgW" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>X-MAS EDITION 2018</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p>SAVE THE DATE!</p>
+<p>26.-29. Dezember 2018</p>
+<p><a href="/sites/default/files/x-mas%20edition%202018%20plakat%20A0%20ONLINE_1.jpg" target="_blank"><em><strong>Hier </strong></em></a>der neue X-MAS EDITION Flyer downloaden...</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="r">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/postkarte%20grundausbildung%20audition%202019%20ONLINE.jpg?itok=x4dIfqcq" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>Audition</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p><strong>Grundausbildung Bühnentanz ZTTS </strong><strong>für Zeitgenössischen und </strong><strong>Urbanen Bühnentanz</strong></p>
+<p><strong>Audition Daten 2019</strong><br />
+09. März, 11. Mai, 01. Juni<br />
+<a href="/sites/default/files/postkarte%20grundausbildung%20audition%202019%20ONLINE.pdf" target="_blank"><em><strong>Hier</strong></em></a> Flyer downloaden</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="o">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/summer%20edition%202018_4.jpg?itok=JC_dQtRs" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>Das SUMMER EDITION 2018  VIDEO ist hier!</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p><a href="https://vimeo.com/288230339">Tanzwerk101 – SUMMER EDITION 2018</a> from <a href="https://vimeo.com/user20597365">Lars Wicki</a> on <a href="https://vimeo.com">Vimeo</a>.</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="u">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/17122013tw1010004-3-dev_4.jpg?itok=FsxXrOBk" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>Info Ausfalldaten und Festtage Abo-Angebot</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p>Informier dich<strong><em> <a href="http://www.tanzwerk101.ch/de/content/%C3%B6ffnungszeiten" target="_blank">hier</a></em> </strong>...</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="s">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/034-1024x683_0.jpg?itok=NTlThMKq" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>Salsa Lady Style</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p>Neu auch mit Natalia Lopez!</p>
+<p> </p>
+<p>Sa, 13.10. - 27.10.2018</p>
+<p>12:30 - 14:00 Uhr</p>
+<p> </p>
+<p><em><strong><a href="https://www.klubschule.ch/Kurs/Salsa-Lady-Style-Kurzkurs--E_1242421_2100" target="_blank">Hier </a></strong></em>anmelden</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="e">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/tanztag%20poster%20A0%20ONLINE_2.jpg?itok=HkwQsilt" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>3. November // TAG DER OFFENEN TanzTÜR 2018</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p>Save the date!<br />
+Stundenplan folgt in Kürze...</p>
+<p><a href="http://www.tanzwerk101.ch/de/content/tag-der-offenen-tanzt%C3%BCr-2018" target="_blank"><strong>Hier </strong></a>geht's zum Event!</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="l">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/Bild%20Web_0.PNG?itok=q7-nsjQ9" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>Neu Ragga anstatt Urban Mix</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p>ab 05.09.2018 Ragga mit Debbie Zehnder 19.00-20.00 Uhr</p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+      <li class="-">
+<div class="frontViewBack">
+  
+  <div class="views-field views-field-field-teaserimage">        <div class="field-content"><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/newsfeed_1/public/inserat%20HF-buehnentanz%20186x133mm.jpg?itok=5qIpvf3K" width="97" height="159" alt="" /></div>  </div>  
+  <div class="views-field views-field-field-display-title">        <div class="field-content"><p>Audition</p>
+</div>  </div>  
+  <div class="views-field views-field-body">        <div class="field-content"><p>Eidg. anerkannter Titel „dipl. Bühnentänzer/in HF“</p>
+<p> <strong>Audition Daten 2019</strong><br />
+09.03.2019 // 11.05.2019 // 01.06.2019</p>
+<p>weitere Infos: <a href="http://www.hf-buehnentanz.ch">www.hf-buehnentanz.ch</a></p>
+</div>  </div>  
+  <div class="views-field views-field-contextual-links">        <span class="field-content"></span>  </div></div>
+</li>
+  </ul>
+    </div>
+  
+  
+  
+  
+  
+  
+</div>  </div>
+</div>
+  </div>
+</div>
+        </div>
+        <div id="leftSidebar"><div id="leftSidebarInner"><div class="view view-hffrontnews2 view-id-hffrontnews2 view-display-id-default view-dom-id-97ebfeaa632a0834c57f73478f8c90ea">
+        
+  
+  
+      <div class="view-content">
+        <div class="views-row views-row-1 views-row-odd views-row-first views-row-last">
+      
+  <div class="views-field views-field-body">        <h1 class="field-content"><p>Tanzwerk101 für alle Tanzbegeisterten in und um Zürich der – „place to be“. </p>
+</h1>  </div>  </div>
+    </div>
+  
+  
+  
+  
+  
+  
+</div></div></div>
+        <div id="mainContent">
+          <div id="mainContentInner">
+            <div id="mainContentInner2">
+                                          <div class="view view-hffrontnews3 view-id-hffrontnews3 view-display-id-default view-dom-id-624990d78e5b20069c53e097d18fbebc">
+        
+  
+  
+      <div class="view-content">
+        <div class="views-row views-row-1 views-row-odd views-row-first">
+    <div id="node-5218" class="node node-news3 node-promoted clearfix" about="/de/content/schnuppertag-hf-zub-und-gab-ztts" typeof="sioc:Item foaf:Document">
+
+  
+        <h1 class="title">Schnuppertag: HF ZUB und GAB ZTTS</h1>
+    <span property="dc:title" content="Schnuppertag: HF ZUB und GAB ZTTS" class="rdf-meta element-hidden"></span>
+  
+  <div class="content">
+    <div class="field field-name-field-large-image field-type-image field-label-hidden"><div class="field-items"><div class="field-item even"><a href="http://www.tanzwerk101.ch/sites/default/files/Schnuppertag%20HF%20%26%20ZTTS%202018%20Plakat%20A0%20ONLINE.jpg" rel="lightbox[field_large_image][]" title=""><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/large/public/Schnuppertag%20HF%20%26%20ZTTS%202018%20Plakat%20A0%20ONLINE.jpg?itok=StOyawEh" width="630" height="891" alt="" /></a></div></div></div><div class="field field-name-body field-type-text-with-summary field-label-hidden"><div class="field-items"><div class="field-item even" property="content:encoded"><p><strong>Anmelden unter: </strong><em><a href="mailto:martina.schelker@gmz.migros.ch">martina.schelker@gmz.migros.ch</a></em></p>
+</div></div></div>  </div>
+
+  
+  
+</div>  </div>
+  <div class="views-row views-row-2 views-row-even">
+    <div id="node-4285" class="node node-news3 node-promoted clearfix" about="/de/content/news-open-classes-1" typeof="sioc:Item foaf:Document">
+
+  
+        <h1 class="title">NEWS OPEN CLASSES</h1>
+    <span property="dc:title" content="NEWS OPEN CLASSES" class="rdf-meta element-hidden"></span>
+  
+  <div class="content">
+    <div class="field field-name-field-large-image field-type-image field-label-hidden"><div class="field-items"><div class="field-item even"><a href="http://www.tanzwerk101.ch/sites/default/files/Flyer%20A5%20OPEN%20CLASSES%20WEB_0.jpg" rel="lightbox[field_large_image][]" title=""><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/large/public/Flyer%20A5%20OPEN%20CLASSES%20WEB_0.jpg?itok=cUamlHMK" width="630" height="894" alt="" /></a></div></div></div><div class="field field-name-body field-type-text-with-summary field-label-hidden"><div class="field-items"><div class="field-item even" property="content:encoded"><p><em><strong>ACHTUNG –  Anpassungen bei den PREISEN und ZEITEN!</strong></em><br />
+<em><strong><a href="/sites/default/files/Open%20Classes%2020.08.-05.10.18.pdf" target="_blank">Hier </a></strong></em>Open Class Stundenplan vom<strong> 20.8. – 5.10.18 </strong>downloaden!</p>
+</div></div></div>  </div>
+
+  
+  
+</div>  </div>
+  <div class="views-row views-row-3 views-row-odd views-row-last">
+    <div id="node-2959" class="node node-news3 node-promoted clearfix" about="/de/content/th%C3%A9-dansant-8" typeof="sioc:Item foaf:Document">
+
+  
+        <h1 class="title">Thé Dansant</h1>
+    <span property="dc:title" content="Thé Dansant" class="rdf-meta element-hidden"></span>
+  
+  <div class="content">
+    <div class="field field-name-field-large-image field-type-image field-label-hidden"><div class="field-items"><div class="field-item even"><a href="http://www.tanzwerk101.ch/sites/default/files/The_Dansant_2018%20WEB_0.jpg" rel="lightbox[field_large_image][]" title=""><img typeof="foaf:Image" src="http://www.tanzwerk101.ch/sites/default/files/styles/large/public/The_Dansant_2018%20WEB_0.jpg?itok=cxcw7ipw" width="630" height="447" alt="" /></a></div></div></div><div class="field field-name-body field-type-text-with-summary field-label-hidden"><div class="field-items"><div class="field-item even" property="content:encoded"><p><strong>„Thé Dansant“</strong>, Tanznachmittag für Senioren:<a href="/sites/default/files/The_Dansant_2018%20WEB.pdf" target="_blank"> <strong>Flyer 2018 herunterladen </strong></a><br />
+jeden 3. Dienstag im Monat, 14 - 17 Uhr, Live Musik, Barbetrieb, Tänzer für Damen, Eintritt Fr. 10.-</p>
+<p> </p>
+<p><strong>Daten 2018</strong></p>
+<p>16. Oktober: One Man Band Bobby<br />
+20. November: Duo Hall<br />
+18. Dezember: Stefan's Music</p>
+</div></div></div>  </div>
+
+  
+  
+</div>  </div>
+    </div>
+  
+  
+  
+  
+  
+  
+</div>              
+            </div>
+          </div>
+        </div>
+        <div style="clear:both;">&nbsp;</div>
+<div id="footer">  <div class="region region-footer">
+    <div id="block-block-4" class="block block-block">
+
+    
+  <div class="content">
+    <p><a href="http://certifiedclientsportal.sgs.com:80/CCP2/Public/CertificateView?Id=60040973&amp;master=popup" target="_blank"><img alt="" src="/sites/default/files/29990_gm_de_kl.jpg" style="width: 107px; height: 107px;" /></a><img alt="" src="/sites/default/files/IQNet_gm_al_kl.jpg" style="height: 107px; width: 107px;" /></p>
+  </div>
+</div>
+  </div>
+</div>      </div>
+    </div>
+  </div>
+  </body>
+</html>
