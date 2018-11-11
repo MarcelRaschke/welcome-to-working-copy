@@ -1,0 +1,535 @@
+/*
+ Ulysses WordPress Preview: WP Twenty Seventeen
+ */
+
+html {
+	box-sizing: border-box;
+}
+
+body {
+	color:       #333;
+	background:  #fff;
+	font-family: "Libre Franklin", "Helvetica Neue", helvetica, arial, sans-serif;
+	font-size:   0.9375rem;
+	font-weight: 400;
+	line-height: 1.66;
+	margin:      0;
+	padding:     2.5em 2em 2.5em 2em;
+}
+
+*, *:before, *:after {
+	box-sizing: inherit;
+}
+
+article {
+	position:     relative;
+	word-wrap:    break-word;
+	margin-left:  auto;
+	margin-right: auto;
+	max-width:    700px;
+}
+
+article:after {
+	clear:   both;
+	content: "";
+	display: block;
+}
+
+p {
+	margin:  0 0 1.5em;
+	padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	clear:       both;
+	line-height: 1.4;
+	margin:      0 0 0.75em;
+	padding:     1.5em 0 0;
+}
+
+h1:first-child, h2:first-child, h3:first-child, h4:first-child, h5:first-child, h6:first-child {
+	padding-top: 0;
+}
+
+h1 {
+	font-size:   1.5rem;
+	font-weight: 300;
+}
+
+h1.entry-title {
+	margin-bottom: 0.25em;
+}
+
+h1.entry-title a {
+	color:           #333;
+	box-shadow:      inset 0 -1px 0 rgba(255, 255, 255, 1);
+	transition:      color 80ms ease-in, box-shadow 130ms ease-in-out;
+	text-decoration: none;
+	margin-left:    -2px;
+}
+
+h2 {
+	color:       #666;
+	font-size:   1.25rem;
+	font-weight: 300;
+}
+
+h3 {
+	color:       #333;
+	font-size:   1.125rem;
+	font-weight: 300;
+}
+
+h4 {
+	color:       #333;
+	font-size:   1rem;
+	font-weight: 800;
+}
+
+h5 {
+	color:          #767676;
+	font-size:      0.8125rem;
+	font-weight:    800;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+}
+
+h6 {
+	color:       #333;
+	font-size:   0.9375rem;
+	font-weight: 800;
+}
+
+dfn, cite, em, i {
+	font-style: italic;
+}
+
+blockquote {
+	color:       #666;
+	font-size:   1.125rem;
+	font-style:  italic;
+	line-height: 1.7;
+	margin:      0;
+	overflow:    hidden;
+	padding:     0;
+}
+
+blockquote cite {
+	display:     block;
+	font-style:  normal;
+	font-weight: 600;
+	margin-top:  0.5em;
+}
+
+pre {
+	background:    #eee;
+	font-family:   "Courier 10 Pitch", Courier, monospace;
+	font-size:     0.9375rem;
+	line-height:   1.6;
+	margin-bottom: 1.6em;
+	max-width:     100%;
+	overflow:      auto;
+	padding:       1.6em;
+}
+
+code, kbd, tt, var {
+	font-family: Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
+	font-size:   0.9375rem;
+}
+
+abbr, acronym {
+	border-bottom: 1px dotted #666;
+	cursor:        help;
+}
+
+mark, ins {
+	background:      #eee;
+	text-decoration: none;
+}
+
+big {
+	font-size: 125%;
+}
+
+blockquote {
+	quotes: "" "";
+}
+
+q {
+	quotes: "“" "”" "‘" "’";
+}
+
+blockquote:before, blockquote:after {
+	content: "";
+}
+
+:focus {
+	outline: none;
+}
+
+hr {
+	background-color: #bbb;
+	border:           0;
+	height:           1px;
+	margin-bottom:    1.5em;
+}
+
+ul, ol {
+	margin:  0 0 1.5em;
+	padding: 0;
+}
+
+ul {
+	list-style: disc;
+}
+
+ol {
+	list-style: decimal;
+}
+
+li > ul, li > ol {
+	margin-bottom: 0;
+	margin-left:   1.5em;
+}
+
+dt {
+	font-weight: 700;
+}
+
+dd {
+	margin: 0 1.5em 1.5em;
+}
+
+table {
+	border-collapse: collapse;
+	margin:          0 0 1.5em;
+	width:           100%;
+}
+
+thead th {
+	border-bottom:  2px solid #bbb;
+	padding-bottom: 0.5em;
+}
+
+th {
+	padding:    0.4em;
+	text-align: left;
+}
+
+tr {
+	border-bottom: 1px solid #eee;
+}
+
+td {
+	padding: 0.4em;
+}
+
+th:first-child, td:first-child {
+	padding-left: 0;
+}
+
+th:last-child, td:last-child {
+	padding-right: 0;
+}
+
+a {
+	color:           #222;
+	text-decoration: none;
+}
+
+a:focus {
+	outline: thin dotted;
+}
+
+a:hover, a:active {
+	color:   #000;
+	outline: 0;
+}
+
+a {
+	box-shadow: inset 0 -1px 0 rgba(15, 15, 15, 1);
+	transition: color 80ms ease-in, box-shadow 130ms ease-in-out;
+}
+
+a:focus, a:hover {
+	color:      #000;
+	box-shadow: inset 0 0 0 rgba(0, 0, 0, 0), 0 3px 0 rgba(0, 0, 0, 1);
+}
+
+figure {
+	width:  350px;
+	margin: 1em 0;
+}
+
+figcaption {
+	color:         #666;
+	font-size:     0.8125rem;
+	font-style:    italic;
+	margin-bottom: 1.5em;
+}
+
+img, video {
+	height:    auto;
+	max-width: 100%;
+}
+
+a img {
+	box-shadow: 0 0 0 8px #fff;
+}
+
+/* Hide standard thumbnail */
+div.post-thumbnail {
+	display: none;
+}
+
+/* Show display big thumbnail at the top */
+div.post-thumbnail-top {
+	display: block !important;
+	margin:  -2.5em -2em 3.5em -2em;
+	background-color: #fafafa;
+	border-bottom: 1px solid #eee;
+}
+
+div.post-thumbnail-top img {
+	display: block;
+	margin: auto;
+}
+
+div.post-thumbnail-top a img {
+	-webkit-backface-visibility: hidden;
+	transition:                  opacity 0.2s;
+}
+
+div.post-thumbnail-top a:hover img, div.post-thumbnail-top a:focus img {
+	opacity: 0.7;
+}
+
+/* FONTS for languages with non-latin characters */
+html[lang="ar"] body, html[lang="ary"] body, html[lang="azb"] body, html[lang="fa-IR"] body, html[lang="haz"] body, html[lang="ps"] body, html[lang="ur"] body {
+	font-family: Tahoma, Arial, sans-serif;
+}
+
+html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3, html[lang="ar"] h4, html[lang="ar"] h5, html[lang="ar"] h6, html[lang="ary"] h1, html[lang="ary"] h2, html[lang="ary"] h3, html[lang="ary"] h4, html[lang="ary"] h5, html[lang="ary"] h6, html[lang="azb"] h1, html[lang="azb"] h2, html[lang="azb"] h3, html[lang="azb"] h4, html[lang="azb"] h5, html[lang="azb"] h6, html[lang="fa-IR"] h1, html[lang="fa-IR"] h2, html[lang="fa-IR"] h3, html[lang="fa-IR"] h4, html[lang="fa-IR"] h5, html[lang="fa-IR"] h6, html[lang="haz"] h1, html[lang="haz"] h2, html[lang="haz"] h3, html[lang="haz"] h4, html[lang="haz"] h5, html[lang="haz"] h6, html[lang="ps"] h1, html[lang="ps"] h2, html[lang="ps"] h3, html[lang="ps"] h4, html[lang="ps"] h5, html[lang="ps"] h6, html[lang="ur"] h1, html[lang="ur"] h2, html[lang="ur"] h3, html[lang="ur"] h4, html[lang="ur"] h5, html[lang="ur"] h6 {
+	font-weight: 700;
+}
+
+html[lang^="zh-"] body {
+	font-family: "PingFang TC", "Helvetica Neue", Helvetica, STHeitiTC-Light, Arial, sans-serif;
+}
+
+html[lang^="zh-"] h1, html[lang^="zh-"] h2, html[lang^="zh-"] h3, html[lang^="zh-"] h4, html[lang^="zh-"] h5, html[lang^="zh-"] h6 {
+	font-weight: 700;
+}
+
+html[lang="bg-BG"] body, html[lang="ru-RU"] body, html[lang="uk"] body {
+	font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, sans-serif;
+}
+
+html[lang="bg-BG"] h1, html[lang="bg-BG"] h2, html[lang="bg-BG"] h3, html[lang="bg-BG"] h4, html[lang="bg-BG"] h5, html[lang="bg-BG"] h6, html[lang="ru-RU"] h1, html[lang="ru-RU"] h2, html[lang="ru-RU"] h3, html[lang="ru-RU"] h4, html[lang="ru-RU"] h5, html[lang="ru-RU"] h6, html[lang="uk"] h1, html[lang="uk"] h2, html[lang="uk"] h3, html[lang="uk"] h4, html[lang="uk"] h5, html[lang="uk"] h6 {
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+html[lang="bn-BD"] body, html[lang="hi-IN"] body, html[lang="mr-IN"] body {
+	font-family: Arial, sans-serif;
+}
+
+html[lang="bn-BD"] h1, html[lang="bn-BD"] h2, html[lang="bn-BD"] h3, html[lang="bn-BD"] h4, html[lang="bn-BD"] h5, html[lang="bn-BD"] h6, html[lang="hi-IN"] h1, html[lang="hi-IN"] h2, html[lang="hi-IN"] h3, html[lang="hi-IN"] h4, html[lang="hi-IN"] h5, html[lang="hi-IN"] h6, html[lang="mr-IN"] h1, html[lang="mr-IN"] h2, html[lang="mr-IN"] h3, html[lang="mr-IN"] h4, html[lang="mr-IN"] h5, html[lang="mr-IN"] h6 {
+	font-weight: 700;
+}
+
+html[lang="el"] body {
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+html[lang="el"] h1, html[lang="el"] h2, html[lang="el"] h3, html[lang="el"] h4, html[lang="el"] h5, html[lang="el"] h6 {
+	font-weight: 700;
+	line-height: 1.3;
+}
+
+html[lang="gu-IN"] body {
+	font-family: Arial, sans-serif;
+}
+
+html[lang="gu-IN"] h1, html[lang="gu-IN"] h2, html[lang="gu-IN"] h3, html[lang="gu-IN"] h4, html[lang="gu-IN"] h5, html[lang="gu-IN"] h6 {
+	font-weight: 700;
+}
+
+html[lang="he-IL"] body {
+	font-family: "Arial Hebrew", Arial, sans-serif;
+}
+
+html[lang="he-IL"] h1, html[lang="he-IL"] h2, html[lang="he-IL"] h3, html[lang="he-IL"] h4, html[lang="he-IL"] h5, html[lang="he-IL"] h6 {
+	font-weight: 700;
+}
+
+html[lang="ja"] body {
+	font-family: "Hiragino Kaku Gothic Pro", Meiryo, sans-serif;
+}
+
+html[lang="ja"] h1, html[lang="ja"] h2, html[lang="ja"] h3, html[lang="ja"] h4, html[lang="ja"] h5, html[lang="ja"] h6 {
+	font-weight: 700;
+}
+
+html[lang="ko-KR"] body {
+	font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", Dotum, sans-serif;
+}
+
+html[lang="ko-KR"] h1, html[lang="ko-KR"] h2, html[lang="ko-KR"] h3, html[lang="ko-KR"] h4, html[lang="ko-KR"] h5, html[lang="ko-KR"] h6 {
+	font-weight: 600;
+}
+
+html[lang="th"] body, {
+	line-height: 1.8;
+	font-family: "Sukhumvit Set", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+html[lang="th"] h1, html[lang="th"] h2, html[lang="th"] h3, html[lang="th"] h4, html[lang="th"] h5, html[lang="th"] h6 {
+	line-height: 1.65;
+	font-family: "Sukhumvit Set", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+html[lang="ar"] *, html[lang="ary"] *, html[lang="azb"] *, html[lang="haz"] *, html[lang="ps"] *, html[lang^="zh-"] *, html[lang="bg-BG"] *, html[lang="ru-RU"] *, html[lang="uk"] *, html[lang="bn-BD"] *, html[lang="hi-IN"] *, html[lang="mr-IN"] *, html[lang="el"] *, html[lang="gu-IN"] *, html[lang="he-IL"] *, html[lang="ja"] *, html[lang="ko-KR"] *, html[lang="th"] * {
+	letter-spacing: 0 !important;
+}
+
+@media screen and (min-width: 30em) {
+
+	body {
+		font-size: 1.125rem;
+	}
+
+	h1 {
+		font-size: 1.875rem;
+	}
+
+	h2, h1.entry-title {
+		font-size: 1.625rem;
+	}
+
+	h3 {
+		font-size: 1.375rem;
+	}
+
+	h4 {
+		font-size: 1.125rem;
+	}
+
+	h5 {
+		font-size: 0.8125rem;
+	}
+
+	h6 {
+		font-size: 1rem;
+	}
+}
+
+@media screen and (min-width: 44em) {
+
+	body {
+		font-size:   1rem;
+		line-height: 1.5;
+	}
+
+	article {
+		max-width:     700px;
+		padding-left:  3em;
+		padding-right: 3em;
+	}
+}
+
+@media print {
+
+	body {
+		font-size: 12pt;
+	}
+
+	h1 {
+		font-size: 24pt;
+	}
+
+	h2 {
+		font-size: 22pt;
+	}
+
+	h3 {
+		font-size: 17pt;
+	}
+
+	h4 {
+		font-size: 12pt;
+	}
+
+	h5 {
+		font-size: 11pt;
+	}
+
+	h6 {
+		font-size: 12pt;
+	}
+
+	h1.entry-title {
+		font-size: 10pt;
+	}
+
+	article {
+		padding-left:  5% !important;
+		padding-right: 5% !important;
+		max-width:     none;
+	}
+
+	body {
+		background: none !important;
+	}
+
+	body, a {
+		color: #222 !important;
+	}
+
+	h2, h5, blockquote {
+		color: #777 !important;
+	}
+}
+
+/* FONTS */
+@font-face {
+	font-family: 'Libre Franklin';
+	font-style:  normal;
+	font-weight: 300;
+	src:         local('Libre Franklin Light'), local('LibreFranklin-Light'), url(https://fonts.gstatic.com/s/librefranklin/v1/1_DGDtljMiPWFs5rl_p0yAG48qXrvqx4pYvMg6UxU-c.woff) format('woff');
+}
+
+@font-face {
+	font-family: 'Libre Franklin';
+	font-style:  normal;
+	font-weight: 400;
+	src:         local('Libre Franklin'), local('LibreFranklin-Regular'), url(https://fonts.gstatic.com/s/librefranklin/v1/PFwjf3aDdAQPvNKUrT3U74n0PH9ugSbMbyJUwgXwvOs.woff) format('woff');
+}
+
+@font-face {
+	font-family: 'Libre Franklin';
+	font-style:  normal;
+	font-weight: 700;
+	src:         local('Libre Franklin Bold'), local('LibreFranklin-Bold'), url(https://fonts.gstatic.com/s/librefranklin/v1/1_DGDtljMiPWFs5rl_p0yETZLxqIXlZWWFpwGW7cLi4.woff) format('woff');
+}
+
+@font-face {
+	font-family: 'Libre Franklin';
+	font-style:  italic;
+	font-weight: 300;
+	src:         local('Libre Franklin Light Italic'), local('LibreFranklin-LightItalic'), url(https://fonts.gstatic.com/s/librefranklin/v1/7_V210XP3LBEtEwiCTqho-u_W7oGWh5GemcjV4fMqzE.woff) format('woff');
+}
+
+@font-face {
+	font-family: 'Libre Franklin';
+	font-style:  italic;
+	font-weight: 400;
+	src:         local('Libre Franklin Italic'), local('LibreFranklin-Italic'), url(https://fonts.gstatic.com/s/librefranklin/v1/zrsyK9EytLQ07oRM9IZIsfGUxxGOY1YZZlwiNqP1HiQ.woff) format('woff');
+}
+
+@font-face {
+	font-family: 'Libre Franklin';
+	font-style:  italic;
+	font-weight: 700;
+	src:         local('Libre Franklin Bold Italic'), local('LibreFranklin-BoldItalic'), url(https://fonts.gstatic.com/s/librefranklin/v1/7_V210XP3LBEtEwiCTqho_gS_wbAo-UVERPhlcubOK8.woff) format('woff');
+}
