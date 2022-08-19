@@ -4,7 +4,7 @@ FROM maven:3.8-jdk-11 as BUILD
 COPY . /usr/src/app
 RUN mvn --batch-mode -f /usr/src/app/pom.xml clean package
 
-FROM openjdk:19-jdk
+FROM openjdk:20-jdk
 ENV PORT 4567
 EXPOSE 4567
 COPY --from=BUILD /usr/src/app/target /opt/target
